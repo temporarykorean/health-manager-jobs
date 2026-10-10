@@ -24,7 +24,7 @@ function dateText(value, withTime = false) {
   return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}) }).format(new Date(value));
 }
 
-function closed(job) { return !!job.deadline && Date.parse(job.deadline) < Date.now(); }
+function closed(job, now = Date.now()) { return !!job.withdrawn_at || (!!job.deadline && Date.parse(job.deadline) < now); }
 
 function daysUntil(value, now = Date.now()) {
   if (!value || Number.isNaN(Date.parse(value))) return null;
@@ -42,7 +42,7 @@ function filteredJobs(jobs, filters, saved, now = Date.now()) {
   return jobs.filter(job => (filters.employment === "전체" || job.employment === filters.employment)
     && (filters.region === "전체" || job.region === filters.region)
     && (!filters.savedOnly || saved.has(job.id))
-    && (filters.includeClosed || !job.deadline || Date.parse(job.deadline) >= now)
+    && (filters.includeClosed || !closed(job, now))
     && (!query || `${job.title} ${job.company} ${job.location} ${job.source}`.toLocaleLowerCase().includes(query)))
     .sort((a, b) => filters.sort === "deadline"
       ? (Date.parse(a.deadline) || Infinity) - (Date.parse(b.deadline) || Infinity)
@@ -96,7 +96,7 @@ function card(job) {
   const bottom = element("div", "card-bottom");
   const days = daysUntil(job.deadline);
   const end = element("span", `deadline ${days !== null && days <= 3 && days >= 0 ? "urgent" : ""}`,
-    closed(job) ? "마감일 경과" : days === null ? "마감일 확인 필요" : days === 0 ? "오늘 마감" : `${days <= 3 ? "마감 임박 · " : ""}D-${days}`);
+    job.withdrawn_at ? "채용 목록에서 내려감" : closed(job) ? "마감일 경과" : days === null ? "마감일 확인 필요" : days === 0 ? "오늘 마감" : `${days <= 3 ? "마감 임박 · " : ""}D-${days}`);
   if (job.deadline) end.append(element("small", "", `${dateText(job.deadline, true)} 마감`));
   const original = element("a", "original-link", "원문 보기 ↗");
   original.href = safeLink(job.url); original.target = "_blank"; original.rel = "noopener noreferrer";

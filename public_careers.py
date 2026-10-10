@@ -8,7 +8,7 @@ import time
 from datetime import datetime, timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit, urljoin, urlencode
-from urllib.robotparser import RobotFileParser
+from robots_policy import RobotsPolicy
 from urllib.request import Request, build_opener
 from source_adapters import NoRedirect, USER_AGENT, MAX_BYTES
 from source_policy import direct_url_allowed
@@ -34,7 +34,7 @@ class PublicSession:
             text = raw.decode('utf-8')
             if '<html' in text.lower() or not re.search(r'^\s*User-agent\s*:', text, re.I | re.M):
                 raise ValueError('robots.txt 대신 오류 응답 · 접근 정책 미확인')
-            self.policy = RobotFileParser()
+            self.policy = RobotsPolicy()
             self.policy.parse(text.splitlines())
         except HTTPError as error:
             if error.code != 404 or source.get('robots_missing') != 'allow_with_review':

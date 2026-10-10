@@ -64,6 +64,11 @@ def pending_reason(source, checked_at, available_adapters):
     approved_endpoints = {'saramin': 'https://oapi.saramin.co.kr/job-search', 'naver_search': 'https://openapi.naver.com/v1/search/webkr.json'}
     if adapter(source) in approved_endpoints and source.get('url') != approved_endpoints[adapter(source)]:
         return '공식 API 승인된 주소만 요청 가능'
+    if adapter(source) == 'greenhouse':
+        token = source.get('board_token', '')
+        import re
+        if not re.fullmatch(r'[a-zA-Z0-9_-]{1,80}', token) or source.get('url') != f'https://boards-api.greenhouse.io/v1/boards/{token}/jobs':
+            return 'Greenhouse 공식 공개 GET 주소만 요청 가능'
     required = source.get('required_env', [])
     if adapter(source) == 'saramin':
         required = ['SARAMIN_ACCESS_KEY']

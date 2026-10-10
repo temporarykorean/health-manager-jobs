@@ -13,6 +13,8 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, urlunsplit, parse_qsl, urlencode
 from urllib.request import Request, urlopen
+from public_ats import fetch_greenhouse, parse_greenhouse
+from official_pages import fetch_dlenc, parse_dlenc
 from source_policy import kind, adapter, pending_reason, PRIORITIES
 from job_target import qualify_job
 from public_careers import fetch_alio, parse_alio, fetch_greeting, parse_greeting
@@ -126,7 +128,7 @@ def deduplicate_jobs(jobs):
 
 def active_job(job, checked_at):
     try:
-        return not job.get("deadline") or datetime.fromisoformat(job["deadline"].replace("Z", "+00:00")) >= datetime.fromisoformat(checked_at)
+        return not job.get("withdrawn_at") and (not job.get("deadline") or datetime.fromisoformat(job["deadline"].replace("Z", "+00:00")) >= datetime.fromisoformat(checked_at))
     except (ValueError, TypeError):
         return True
 
@@ -316,6 +318,8 @@ def atomic_json(path, data):
 # 어댑터는 (가져오기, 해석하기) 계약을 공유합니다.
 # 잡코리아는 승인 후 실제 제공 명세에 맞춘 어댑터를 등록합니다.
 ADAPTERS = {
+    "greenhouse": (fetch_greenhouse, parse_greenhouse),
+    "dlenc": (fetch_dlenc, parse_dlenc),
     "alio": (fetch_alio, parse_alio),
     "greeting": (fetch_greeting, parse_greeting),
     "rss": (None, parse_feed),
@@ -352,7 +356,7 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
             parser = ADAPTERS[adapter(source)][1]
             raw = fetcher(source)
             jobs, count = parser(raw, source, checked_at)
-            warnings = json.loads(raw).get("warnings", []) if adapter(source) in {"alio", "greeting"} else []
+            warnings = json.loads(raw).get("warnings", []) if adapter(source) in {"alio", "greeting", "greenhouse", "dlenc"} else []
             if adapter(source) == "alio":
                 accepted_ids = {job["id"] for job in jobs}
                 # 이번 실행에서 상세를 다시 확인한 비관련 공고만 제거. 접속 실패 자료는 보존.
@@ -360,6 +364,12 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
                     rejected = "alio-" + document["row"]["idx"]
                     if rejected not in accepted_ids:
                         existing.pop(rejected, None)
+            if adapter(source) == "greenhouse" and json.loads(raw).get("complete_listing"):
+                listed = set(json.loads(raw)["listed_ids"])
+                for prior in existing.values():
+                    if prior.get("source_id") == source["id"] and prior["id"].rsplit("-", 1)[-1] not in listed:
+                        # 원문에서 사라진 것을 확인한 시각. 실제 마감일을 추정하지 않습니다.
+                        prior.setdefault("withdrawn_at", checked_at)
             destination = discoveries if kind(source) == "search" else existing
             for job in jobs:
                 prior = destination.get(job["id"], {})

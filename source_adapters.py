@@ -9,7 +9,7 @@ from datetime import datetime
 from html.parser import HTMLParser
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, HTTPRedirectHandler, build_opener, urlopen
-from urllib.robotparser import RobotFileParser
+from robots_policy import RobotsPolicy
 from source_policy import direct_url_allowed, domain_matches, public_url, PORTAL_DOMAINS, SEARCH_DOMAINS
 
 USER_AGENT = 'HealthJobsCollector/1.0'
@@ -45,7 +45,7 @@ def fetch_pages(source):
             text = read_direct(robots_url).decode('utf-8', errors='strict')
             if '<html' in text.lower() or not re.search(r'^\s*User-agent\s*:', text, re.I | re.M):
                 raise ValueError('robots.txt 정책 확인 실패')
-            policy = RobotFileParser(robots_url)
+            policy = RobotsPolicy(robots_url)
             policy.parse(text.splitlines())
             robots_by_host[host] = policy
             last_request[host] = time.monotonic()

@@ -82,7 +82,7 @@ def parse_greenhouse(raw, source, checked_at):
         location = str((item.get('location') or {}).get('name') or '')
         address = re.search(r'(?:근무지(?:\s*주소)?|근무\s*장소)\s*[:：]\s*([^\n]+)', body)
         if not address:
-            address = re.search(r'(?:^|\n)근무지\s*\n+\s*([^\n]+)',body)
+            address = re.search(r'근무지[ \t]*\n+[ \t]*([^\n]+)',body)
         detail = address[1].strip(' -•')[:180] if address else location
         translated = location
         for en, ko in [('Seoul','서울'), ('Gyeonggi','경기'), ('Incheon','인천')]:
@@ -100,7 +100,7 @@ def parse_greenhouse(raw, source, checked_at):
                'title':title, 'company':company_match[1] if company_match else source['company'],
                'url':url, 'source_id':source['id'], 'source':source['name'],
                'employment':employment_type(evidence), 'employment_evidence':evidence or '명시 정보 없음',
-               'region':region, 'location':detail or '근무지 확인 필요',
+               'region':region, 'location':(detail if address else translated) or '근무지 확인 필요',
                'location_detail':detail or '상세 근무지 원문 확인 필요',
                'published_at':None, 'deadline':None, 'first_seen':checked_at,
                'last_seen':checked_at, 'collected_at':checked_at, 'origin':'api',

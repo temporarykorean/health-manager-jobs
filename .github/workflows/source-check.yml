@@ -1,8 +1,6 @@
 name: 공개 채용 소스 일회성 접근 조사
 on:
   workflow_dispatch:
-  push:
-    paths: ['scripts/probe_sources.py', '.github/workflows/source-check.yml']
 permissions:
   contents: read
 jobs:

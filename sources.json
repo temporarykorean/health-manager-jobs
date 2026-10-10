@@ -117,5 +117,110 @@
       "mohw.go.kr"
     ],
     "documentation_url": "https://developers.naver.com/docs/serviceapi/search/web/web.md"
+  },
+  {
+    "id": "coupang-greenhouse",
+    "name": "쿠팡 계열 · Greenhouse 공개 API",
+    "type": "api",
+    "adapter": "greenhouse",
+    "board_token": "coupang",
+    "url": "https://boards-api.greenhouse.io/v1/boards/coupang/jobs",
+    "homepage": "https://www.coupang.jobs/kr/jobs/",
+    "company": "쿠팡",
+    "allowed_hosts": [
+      "www.coupang.jobs",
+      "boards.greenhouse.io",
+      "job-boards.greenhouse.io"
+    ],
+    "max_details": 40,
+    "max_seconds": 150,
+    "min_interval_seconds": 1,
+    "documentation_url": "https://docs.greenhouse.io/job-board.html",
+    "notes": "공식 Job Board API GET은 인증 불필요. 공개 공고 목록과 관련 상세만 조회, 지원 제출/지원자 데이터 제외."
+  },
+  {
+    "id": "dn-greeting",
+    "name": "DN오토모티브 · Greeting",
+    "type": "page",
+    "adapter": "greeting",
+    "url": "https://dnautomotive.career.greetinghr.com/ko/home",
+    "homepage": "https://dnautomotive.career.greetinghr.com/ko/home",
+    "company": "DN오토모티브",
+    "allowed_hosts": [
+      "dnautomotive.career.greetinghr.com"
+    ],
+    "allowed_paths": [
+      "/ko/home"
+    ],
+    "page_urls": [
+      "https://dnautomotive.career.greetinghr.com/ko/home"
+    ],
+    "max_requests": 25,
+    "max_seconds": 90,
+    "min_interval_seconds": 2,
+    "access_review": {
+      "decision": "allowed",
+      "reviewed_at": "2026-10-10T00:00:00+09:00",
+      "notes": "robots 공개 목록/상세 Allow 확인. 공개 개인정보 방침 및 페이지 안내 검토에서 공개 채용 메타데이터 자동 조회 금지 조항을 발견하지 못함. 이용허락 보증 아님. 하루 1회 저빈도, 개인정보/지원/로그인/첨부/본문 재배포 제외.",
+      "terms_url": "https://dnautomotive.career.greetinghr.com/ko/personal-info"
+    }
+  },
+  {
+    "id": "11st-greeting",
+    "name": "11번가 · Greeting",
+    "type": "page",
+    "adapter": "greeting",
+    "url": "https://11st.career.greetinghr.com/ko/career",
+    "homepage": "https://11st.career.greetinghr.com/ko/career",
+    "company": "11번가",
+    "allowed_hosts": [
+      "11st.career.greetinghr.com"
+    ],
+    "allowed_paths": [
+      "/ko/career"
+    ],
+    "page_urls": [
+      "https://11st.career.greetinghr.com/ko/career"
+    ],
+    "max_requests": 25,
+    "max_seconds": 90,
+    "min_interval_seconds": 2,
+    "access_review": {
+      "decision": "allowed",
+      "reviewed_at": "2026-10-10T00:00:00+09:00",
+      "notes": "robots 공개 목록/상세 Allow 확인. 공개 개인정보 방침 및 페이지 안내 검토에서 공개 채용 메타데이터 자동 조회 금지 조항을 발견하지 못함. 이용허락 보증 아님. 하루 1회 저빈도, 개인정보/지원/로그인/첨부/본문 재배포 제외.",
+      "terms_url": "https://11st.career.greetinghr.com/ko/privacy"
+    }
+  },
+  {
+    "id": "dlenc",
+    "name": "DL이앤씨 공식 현장 채용",
+    "type": "page",
+    "adapter": "dlenc",
+    "company": "DL이앤씨",
+    "url": "https://www.dlenc.co.kr/careers/job/FieldEmpList.do",
+    "homepage": "https://www.dlenc.co.kr/careers/job/FieldEmpListPJ.do",
+    "allowed_hosts": [
+      "www.dlenc.co.kr"
+    ],
+    "allowed_paths": [
+      "/careers/job/FieldEmpList.do",
+      "/careers/job/FieldEmpListPJ.do",
+      "/careers/job/FieldEmpView.do",
+      "/careers/job/FieldEmpViewPJ.do"
+    ],
+    "page_urls": [
+      "https://www.dlenc.co.kr/careers/job/FieldEmpList.do",
+      "https://www.dlenc.co.kr/careers/job/FieldEmpListPJ.do"
+    ],
+    "min_interval_seconds": 2,
+    "max_requests": 25,
+    "max_seconds": 120,
+    "access_review": {
+      "decision": "allowed",
+      "reviewed_at": "2026-10-10T00:00:00+09:00",
+      "notes": "robots 공개 목록/상세 Allow 확인. 공개 개인정보 방침 및 페이지 안내 검토에서 공개 채용 메타데이터 자동 조회 금지 조항을 발견하지 못함. 이용허락 보증 아님. 하루 1회 저빈도, 개인정보/지원/로그인/첨부/본문 재배포 제외.",
+      "terms_url": "https://www.dlenc.co.kr/etc/Person.do"
+    }
   }
 ]

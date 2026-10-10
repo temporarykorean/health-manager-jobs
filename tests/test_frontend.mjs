@@ -68,3 +68,6 @@ const byDeadline = vm.runInContext(`filteredJobs([
 assert.equal(byDeadline[0].id, 'sooner', '마감 임박순');
 assert.equal(byDeadline[2].id, 'none', '마감일 미기재 마지막');
 console.log('NEW 기간·관심 요약·마감순 검증 통과');
+assert.equal(vm.runInContext('closed({deadline:null, withdrawn_at:"2026-10-10"})', context), true, '목록에서 사라진 공고는 기본 숨김');
+assert.equal(vm.runInContext(`filteredJobs([{id:'gone',title:'보건관리자',company:'A',source:'공개 API',location:'서울',withdrawn_at:'2026-10-10'}], {...state, employment:'전체',region:'전체',query:'',savedOnly:false,includeClosed:false},new Set()).length`, context), 0);
+assert.equal(vm.runInContext(`filteredJobs([{id:'gone',title:'보건관리자',company:'A',source:'공개 API',location:'서울',withdrawn_at:'2026-10-10'}], {...state, employment:'전체',region:'전체',query:'',savedOnly:false,includeClosed:true},new Set()).length`, context), 1, '마감 포함으로 이력 확인');

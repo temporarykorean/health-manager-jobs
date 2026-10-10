@@ -6,8 +6,8 @@ import sys
 import time
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
-from urllib.robotparser import RobotFileParser
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from robots_policy import RobotsPolicy
 from source_adapters import read_direct, USER_AGENT
 from collector import clean_text, RELATED_PATTERN
 from public_careers import greeting_rows
@@ -30,7 +30,7 @@ def probe(item):
   robots=read_direct(base+'/robots.txt').decode('utf-8')
   if '<html' in robots.lower() or not re.search(r'^\s*User-agent\s*:',robots,re.I|re.M): raise ValueError('robots 형식 미확인')
   result['robots']=robots[:2500]
-  policy=RobotFileParser();policy.parse(robots.splitlines())
+  policy=RobotsPolicy();policy.parse(robots.splitlines())
   if not policy.can_fetch(USER_AGENT,url): raise ValueError('robots 비허용')
   delay=max(2,policy.crawl_delay(USER_AGENT) or 0)
   if delay>30: raise ValueError('요청 간격 한도')
@@ -69,7 +69,8 @@ from public_ats import fetch_greenhouse, parse_greenhouse
 source={'id':'coupang-greenhouse','name':'쿠팡 · Greenhouse 공개 API','type':'api','adapter':'greenhouse','board_token':'coupang','company':'쿠팡','url':'https://boards-api.greenhouse.io/v1/boards/coupang/jobs','allowed_hosts':['www.coupang.jobs','boards.greenhouse.io','job-boards.greenhouse.io'],'max_details':40}
 try:
  raw=fetch_greenhouse(source)
- jobs,count=parse_greenhouse(raw,source,'2026-10-10T22:00:00+09:00')
+ from collector import now_iso
+ jobs,count=parse_greenhouse(raw,source,now_iso())
  payload=json.loads(raw)
  print('ATS_PROBE '+json.dumps(dict(scanned=count,warnings=payload['warnings'],jobs=jobs),ensure_ascii=False),flush=True)
 except Exception as e: print('ATS_PROBE '+json.dumps({'error':str(e)}),flush=True)
