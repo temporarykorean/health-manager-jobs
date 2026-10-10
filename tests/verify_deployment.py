@@ -11,7 +11,7 @@ for attempt in range(6):
     try:
         with urlopen(base, timeout=20) as response:
             assert response.status == 200
-            assert "보건관리자 채용 모아보기" in response.read().decode()
+            assert "나의 보건채용 대시보드" in response.read().decode()
         with urlopen(base + "data/jobs.json?t=" + str(time.time_ns()), timeout=20) as response:
             actual = json.load(response)
         assert actual == expected, "배포 데이터가 저장소 최신 데이터와 다릅니다"
