@@ -56,3 +56,15 @@ const newest = vm.runInContext(`filteredJobs([
  {id:'new',title:'산업간호사',company:'B',source:'ALIO',location:'인천',region:'인천',employment:'정규직',published_at:'2026-10-09'}
 ], {...state, sort:'recent', region:'인천', employment:'전체', query:'', savedOnly:false}, new Set())`, context);
 assert.equal(newest[0].id, 'new', '게시일 최신순');
+assert.equal(vm.runInContext('isNew({first_seen:"2026-10-10T10:00:00+09:00"}, Date.parse("2026-10-11T10:00:00+09:00"))', context), true, '최근 3일 처음 수집 NEW');
+assert.equal(vm.runInContext('isNew({first_seen:"2026-10-08T10:00:00+09:00"}, Date.parse("2026-10-11T10:00:00+09:00"))', context), false, '3일 경과 NEW 해제');
+assert.equal(vm.runInContext('isNew({first_seen:"2099-10-10"}, Date.parse("2026-10-11"))', context), false, '미래 수집일 NEW 제외');
+assert.equal(ids.get('stat-saved').textContent, 1, '관심공고 요약');
+const byDeadline = vm.runInContext(`filteredJobs([
+ {id:'none',title:'A',company:'A',source:'A',location:'서울',deadline:null},
+ {id:'later',title:'B',company:'B',source:'A',location:'서울',deadline:'2099-12-31'},
+ {id:'sooner',title:'C',company:'C',source:'A',location:'서울',deadline:'2099-11-01'}
+], {...state, sort:'deadline', region:'전체', employment:'전체', query:'', savedOnly:false}, new Set())`, context);
+assert.equal(byDeadline[0].id, 'sooner', '마감 임박순');
+assert.equal(byDeadline[2].id, 'none', '마감일 미기재 마지막');
+console.log('NEW 기간·관심 요약·마감순 검증 통과');

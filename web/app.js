@@ -32,6 +32,11 @@ function daysUntil(value, now = Date.now()) {
   return kstDay(Date.parse(value)) - kstDay(now);
 }
 
+function isNew(job, now = Date.now()) {
+  const first = Date.parse(job.first_seen);
+  return Number.isFinite(first) && first <= now && now - first < 3 * 86400000;
+}
+
 function filteredJobs(jobs, filters, saved, now = Date.now()) {
   const query = filters.query.toLocaleLowerCase().trim();
   return jobs.filter(job => (filters.employment === "전체" || job.employment === filters.employment)
@@ -64,7 +69,7 @@ function renderChips(id, options, key) {
 }
 
 function card(job) {
-  const article = element("article", "job-card");
+  const article = element("article", `job-card${isNew(job) && !closed(job) ? " is-new" : ""}${closed(job) ? " is-closed" : ""}`);
   const top = element("div", "card-top");
   const save = element("button", "save-button", favorites.has(job.id) ? "★ 관심" : "☆ 관심");
   save.setAttribute("aria-pressed", String(favorites.has(job.id)));
@@ -75,7 +80,10 @@ function card(job) {
     catch { toast("이 브라우저에서는 관심 공고가 영구 저장되지 않습니다."); }
     render();
   };
-  top.append(element("span", "company", job.company), save);
+  const company = element("div", "company-line");
+  company.append(element("span", "company", job.company));
+  if (isNew(job) && !closed(job)) company.append(element("span", "new-badge", "NEW"));
+  top.append(company, save);
   const heading = element("h3", "job-title");
   const link = element("a", "", job.title);
   link.href = safeLink(job.url); link.target = "_blank"; link.rel = "noopener noreferrer";
@@ -88,18 +96,20 @@ function card(job) {
   const bottom = element("div", "card-bottom");
   const days = daysUntil(job.deadline);
   const end = element("span", `deadline ${days !== null && days <= 3 && days >= 0 ? "urgent" : ""}`,
-    closed(job) ? "마감일 경과" : days === null ? "마감일 확인 필요" : days === 0 ? "오늘 마감" : `D-${days}`);
+    closed(job) ? "마감일 경과" : days === null ? "마감일 확인 필요" : days === 0 ? "오늘 마감" : `${days <= 3 ? "마감 임박 · " : ""}D-${days}`);
   if (job.deadline) end.append(element("small", "", `${dateText(job.deadline, true)} 마감`));
   const original = element("a", "original-link", "원문 보기 ↗");
   original.href = safeLink(job.url); original.target = "_blank"; original.rel = "noopener noreferrer";
   bottom.append(end, original);
+  const metadata = element("div", "job-meta");
+  metadata.append(element("span", "", `출처 · ${job.source}`), element("span", "", `게시 · ${job.published_at ? dateText(job.published_at) : "확인 필요"}`));
   const evidence = element("details", "evidence");
   evidence.append(element("summary", "", "출처와 분류 기준 확인"));
   const ul = element("ul");
   [`출처: ${job.source}`, `게시일: ${dateText(job.published_at)}`, `상세 근무지: ${job.location_detail || "원문 확인 필요"}`, `간호사 자격 근거: ${job.qualification_evidence || "원문 확인 필요"}`, `키워드 근거: ${job.keyword_evidence || "제목 또는 출처의 직무명"}`, `고용형태 근거: ${job.employment_evidence || "명시 정보 없음"}`, `마지막 확인: ${dateText(job.last_seen, true)}`,
     job.origin === "manual" ? "초기 공고는 직접 확인한 자료입니다. 자동 갱신 대상이 아닙니다." : "연결된 출처에서 확인한 정보입니다. 최신 접수 여부는 원문을 확인해주세요."].forEach(text => ul.append(element("li", "", text)));
   evidence.append(ul);
-  article.append(top, heading, badges, element("p", "job-location", job.location), bottom, evidence);
+  article.append(top, heading, badges, element("p", "job-location", job.location), bottom, metadata, evidence);
   return article;
 }
 
@@ -134,6 +144,11 @@ function renderDiscoveries() {
 function render() {
   renderChips("employment-filters", employmentOptions, "employment");
   renderChips("region-filters", regionOptions, "region");
+  const open = data.jobs.filter(job => !closed(job));
+  $("stat-open").textContent = open.length;
+  $("stat-new").textContent = open.filter(job => isNew(job)).length;
+  $("stat-urgent").textContent = open.filter(job => { const days = daysUntil(job.deadline); return days !== null && days >= 0 && days <= 3; }).length;
+  $("stat-saved").textContent = data.jobs.filter(job => favorites.has(job.id)).length;
   const jobs = filteredJobs(data.jobs, state, favorites);
   $("count").textContent = jobs.length;
   $("list").replaceChildren(...jobs.map(card));
