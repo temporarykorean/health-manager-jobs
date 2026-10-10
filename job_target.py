@@ -13,7 +13,8 @@ def qualify_job(job):
     evidence = re.sub(r'[\u200b-\u200d\ufeff]', '', evidence)
     if re.search(OTHER_ROLE, title) and not re.search(HEALTH_ROLE + r'|간호(?:사|직)', title):
         return None
-    if not re.search(HEALTH_ROLE, title + '\n' + evidence):
+    workplace_nurse = re.search(r'간호사', title) and re.search(r'임직원|사내|사업장|보건실|건강관리실', title)
+    if not re.search(HEALTH_ROLE, title + '\n' + evidence) and not workplace_nurse:
         return None
     if re.search(r'간호사\s*(?:면허(?:증)?\s*)?(?:지원\s*불가|제외|불인정)', evidence):
         return None

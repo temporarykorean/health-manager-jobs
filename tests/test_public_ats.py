@@ -48,6 +48,8 @@ class PublicATSTests(unittest.TestCase):
   jobs,count=parse_dlenc(json.dumps(data).encode(),source,NOW)
   self.assertEqual(count,1);self.assertEqual(jobs[0]['employment'],'비정규직');self.assertEqual(jobs[0]['region'],'경기')
   self.assertIsNone(jobs[0]['deadline']);self.assertIn('간호사 면허',jobs[0]['qualification_evidence'])
+  data['documents'][0]['html']=page.replace('<th>모집분야</th>','<th>직군</th><th>직렬</th><th>직무</th><th>모집분야</th>')
+  self.assertEqual(len(parse_dlenc(json.dumps(data).encode(),source,NOW)[0]),1,'숨김 헤더의 생략된 셀 처리')
   data['documents'][0]['html']=page.replace('<th>', '<td>').replace('</th>', '</td>')
   self.assertEqual(len(parse_dlenc(json.dumps(data).encode(),source,NOW)[0]),1,'legacy td header')
   data['documents'][0]['html']=page.replace('보건관리','안전관제')+'<nav>보건관리자</nav>'

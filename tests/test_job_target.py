@@ -25,3 +25,10 @@ class PreservedQualificationTests(unittest.TestCase):
  def test_separate_health_and_license_evidence_retained(self):
   job={'title':'간호직 직원 채용','nursing_eligibility':'간호사 면허 자격 명시','qualification_evidence':'간호사 면허증 소지자','keyword_evidence':'보건관리자 근무 경력 3년 이상'}
   self.assertIsNotNone(qualify_job(job))
+
+class WorkplaceNurseTests(unittest.TestCase):
+ def test_employee_health_nurse_without_literal_health_manager(self):
+  job={'title':'본사 임직원 건강관리 담당자 (간호사)','_qualification_text':'임직원 건강상담 및 응급처치. 간호사 면허증 소지자'}
+  self.assertEqual(qualify_job(job)['nursing_eligibility'],'간호사 면허 자격 명시')
+ def test_clinical_nurse_is_not_workplace_nurse(self):
+  self.assertIsNone(qualify_job({'title':'병동 간호사 채용','_qualification_text':'간호사 면허증 소지자'}))

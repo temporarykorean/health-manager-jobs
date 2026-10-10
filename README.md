@@ -69,3 +69,5 @@ GitHub 배포 뒤 `tests/verify_deployment.py`가 인증 없는 HTML/JS/CSS/data
 - 추가 후보 조사: GitHub Actions의 ‘공개 채용 소스 일회성 접근 조사’를 수동 실행하거나 Mac에서 `python3 scripts/probe_sources.py`. robots 허용 경로만 읽고 원문 HTML은 저장하지 않습니다.
 
 구체적인 연결/제외 근거와 실제 집계는 `SOURCE_CATALOG.md`, `COLLECTION_REPORT.md`에 기록합니다.
+
+제목에 보건관리자라는 단어가 없어도 임직원·사내·사업장·보건실·건강관리실의 간호사 직무는 후보로 포함합니다. 일반 병원 병동 간호사 공고는 포함하지 않습니다.

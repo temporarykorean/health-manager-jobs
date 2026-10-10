@@ -66,8 +66,12 @@ def parse_dlenc(raw,source,checked_at):
                     fields.update(zip(headers,value))
                 if '모집분야' in headers:
                     for values_row in cells[index+1:]:
-                        if len(values_row)!=len(headers): continue
-                        mapping=dict(zip(headers,values_row))
+                        active_headers=headers
+                        if len(values_row)!=len(headers):
+                            # 구형 템플릿은 숨김 직군/직렬/직무 헤더만 있고 대응 셀은 생략합니다.
+                            active_headers=[h for h in headers if h not in {'직군','직렬','직무'}]
+                        if len(values_row)!=len(active_headers): continue
+                        mapping=dict(zip(active_headers,values_row))
                         if re.search(HEALTH_ROLE,mapping.get('모집분야','')):
                             health.append(mapping)
         # 다른 직렬, 메뉴, 이전/다음 공고에서 키워드를 가져오지 않습니다.
