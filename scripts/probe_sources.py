@@ -45,6 +45,7 @@ def probe(item):
   result['policy_links']=[(urljoin(url,u),t) for u,t in links if re.search(r'이용약관|이용조건|개인정보|privacy|terms',u+' '+t,re.I)][:10]
   result['career_links']=[(urljoin(url,u),t[:150]) for u,t in links if re.search(r'FieldEmp|jobnotice|보건|간호|JobPosting',u+' '+t,re.I)][:25]
   result['scripts']=[u for u in re.findall(r'<script[^>]*src=["\']([^"\']+)',text) if re.search(r'career|recruit|job',u,re.I)][:8]
+  result['table_schema']=[[clean_text(c) for c in re.findall(r'<t[hd]\b[^>]*>([\s\S]*?)</t[hd]>',row,re.I)] for row in re.findall(r'<tr\b[^>]*>([\s\S]*?)</tr>',text,re.I) if '<th' in row.lower() or re.search(r'보건관리|모집분야|모집 분야',clean_text(row))][:15]
   result['table_rows']=[clean_text(r)[:350] for r in re.findall(r'<tr\b[^>]*>([\s\S]*?)</tr>',text,re.I) if re.search(r'채용|보건|현채직|PJT',clean_text(r))][:12]
   result['jsonld']='application/ld+json' in text
   result['relevant_context']=[clean_text(text)[max(0,m.start()-100):m.end()+300] for m in re.finditer(r'보건관리|산업간호|간호사',clean_text(text))][:8]
@@ -71,6 +72,7 @@ try:
  raw=fetch_greenhouse(source)
  from collector import now_iso
  jobs,count=parse_greenhouse(raw,source,now_iso())
+ print('ATS_CANDIDATES '+json.dumps([d['title'] for d in json.loads(raw)['documents']],ensure_ascii=False),flush=True)
  payload=json.loads(raw)
  print('ATS_PROBE '+json.dumps(dict(scanned=count,warnings=payload['warnings'],jobs=jobs),ensure_ascii=False),flush=True)
 except Exception as e: print('ATS_PROBE '+json.dumps({'error':str(e)}),flush=True)

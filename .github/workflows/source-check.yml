@@ -1,6 +1,8 @@
 name: 공개 채용 소스 일회성 접근 조사
 on:
   workflow_dispatch:
+  push:
+    branches: [inspect-public-tables]
 permissions:
   contents: read
 jobs:
