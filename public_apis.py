@@ -103,9 +103,8 @@ def alio_rows(value):
 
 def fetch_alio_api(source):
     key = unquote(os.environ[source['required_env'][0]].strip())
-    today = datetime.now().date()
-    params = {'serviceKey': key, 'resultType': 'json', 'ongoingYn': 'Y', 'numOfRows': 100,
-              'pbancBgngYmd': (today - timedelta(days=120)).isoformat(), 'pbancEndYmd': today.isoformat()}
+    params = {'serviceKey': key, 'resultType': 'json', 'ongoingYn': 'Y', 'numOfRows': 100}
+    # 실응답 검증된 진행중 조회를 사용. 시작일 제한 없이 오래 열린 상시채용도 포함한다.
     # 제목 검색만 하면 다직렬 채용의 자격요건에 있는 보건관리자를 놓치므로 전체 진행중 목록을 조회한다.
     rows, warnings = [], []
     max_pages = min(20, max(1, int(source.get('max_pages', 10))))

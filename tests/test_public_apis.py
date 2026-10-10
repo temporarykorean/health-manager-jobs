@@ -36,6 +36,15 @@ class PublicApiTests(unittest.TestCase):
     def test_alio_live_success_code_200(self):
         self.assertEqual(alio_rows({'resultCode':200,'result':[{'item':ROW}]}),[ROW])
         with self.assertRaises(ValueError): alio_rows({'resultCode':401,'result':[]})
+    def test_alio_live_flat_list_and_ongoing_without_date_filter(self):
+        payload={'resultCode':200,'result':[ROW],'totalCount':1}
+        with patch.dict(os.environ,{'DATA_GO_KR_SERVICE_KEY':'test'}), patch('public_apis.read_api',return_value=json.dumps(payload).encode()) as read:
+            collected=fetch_alio_api(ALIO)
+        self.assertEqual(parse_alio_api(collected,ALIO,CHECKED)[0][0]['id'],'alio-123')
+        params=read.call_args.args[1]
+        self.assertEqual(params['ongoingYn'],'Y')
+        self.assertNotIn('pbancBgngYmd',params)
+        self.assertNotIn('pbancEndYmd',params)
     def test_cert_only_and_general_safety_excluded(self):
         row=dict(ROW,recrutPbancTtl='산업안전기사',aplyQlfcCn='자격요건: 산업안전기사 필수')
         self.assertEqual(parse_alio_api(raw([row]),ALIO,CHECKED)[0],[])
