@@ -1,4 +1,5 @@
 """검토된 기관 페이지 및 공식 검색 API. 검색 결과 원문은 자동 방문하지 않습니다."""
+from job_target import qualify_job
 import hashlib
 import json
 import os
@@ -141,8 +142,8 @@ def parse_pages(raw, source, checked_at):
                          'employment': employment_type(evidence), 'employment_evidence': evidence or '명시 정보 없음',
                          'region': region_type(location), 'location': location.strip() or '근무지 확인 필요',
                          'deadline': deadline, 'published_at': published_date(posting.get('datePosted', '')),
-                         'first_seen': checked_at, 'last_seen': checked_at, 'origin': 'page'})
-    return jobs, count
+                         'first_seen': checked_at, 'last_seen': checked_at, 'origin': 'page', '_qualification_text':description})
+    return [qualified for job in jobs if (qualified := qualify_job(job))], count
 
 
 def fetch_search(source):
@@ -199,4 +200,4 @@ def parse_search(raw, source, checked_at):
                            'title': title, 'url': url, 'source_id': source['id'], 'source': source['name'],
                            'first_seen': checked_at, 'last_seen': checked_at, 'origin': 'search',
                            'verification': '원문 미검증 · 접수 여부 확인 필요'})
-    return candidates, len(payload['items'])
+    return [qualified for item in candidates if (qualified := qualify_job(item))], len(payload['items'])

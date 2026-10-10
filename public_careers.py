@@ -1,4 +1,5 @@
 """키 없이 읽는 ALIO 및 공통 채용 플랫폼. 승인된 경로에만 낮은 빈도로 접근."""
+from job_target import qualify_job
 import hashlib
 import html
 import json
@@ -198,10 +199,10 @@ def parse_alio(raw, source, checked_at):
                      'location_detail': detail_location[1][:160] if detail_location else '상세 근무지 원문 확인 필요',
                      'deadline': deadline, 'published_at': published,
                      'first_seen': checked_at, 'last_seen': checked_at, 'collected_at': checked_at,
-                     'origin': 'page', 'relevance': '관련 직무 확인 필요' if re.search(r'안전관리자|산업안전기사', title) and not re.search(r'보건\s*관리|산업\s*간호|사업장\s*간호', title) else '보건 관련 키워드 포함',
+                     '_qualification_text': body, 'origin': 'page', 'relevance': '관련 직무 확인 필요' if re.search(r'안전관리자|산업안전기사', title) and not re.search(r'보건\s*관리|산업\s*간호|사업장\s*간호', title) else '보건 관련 키워드 포함',
                      'keyword_evidence': clean_text(evidence[max(0,match.start()-30):match.end()+100])[:160]})
     # 메타는 fetcher가 전달한 경고를 collect에서 별도로 읽습니다.
-    return jobs, payload['scanned']
+    return [qualified for job in jobs if (qualified := qualify_job(job))], payload['scanned']
 
 
 def greeting_rows(text, base):
@@ -272,7 +273,7 @@ def parse_greeting(raw,source,checked_at):
                 'employment_evidence':evidence or '명시 정보 없음','employment_confidence':'explicit' if employment!='확인 필요' else 'uncertain',
                 'region':region_type(location),'location':location or '근무지 확인 필요','location_detail':location or '상세 근무지 원문 확인 필요',
                 'deadline':date,'published_at':info.get('openDate'),'first_seen':checked_at,'last_seen':checked_at,
-                'collected_at':checked_at,'origin':'page','keyword_evidence':body[:160]})
+                'collected_at':checked_at,'origin':'page','keyword_evidence':body[:160], '_qualification_text':body})
         elif postings:
             parsed,_=parse_pages(json.dumps([{'url':doc['url'],'html':doc['html']}]).encode(),source,checked_at)
             for job in parsed:
@@ -294,4 +295,4 @@ def parse_greeting(raw,source,checked_at):
                          'region':region_type(location),'location':location or '근무지 확인 필요',
                          'location_detail':'상세 근무지 원문 확인 필요','deadline':None,'published_at':None,
                          'first_seen':checked_at,'last_seen':checked_at,'collected_at':checked_at,'origin':'page'})
-    return jobs,payload['scanned']
+    return [qualified for job in jobs if (qualified := qualify_job(job))],payload['scanned']

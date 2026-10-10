@@ -14,6 +14,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlsplit, urlunsplit, parse_qsl, urlencode
 from urllib.request import Request, urlopen
 from source_policy import kind, adapter, pending_reason, PRIORITIES
+from job_target import qualify_job
 from public_careers import fetch_alio, parse_alio, fetch_greeting, parse_greeting
 from source_adapters import fetch_pages, parse_pages, fetch_search, parse_search
 
@@ -214,9 +215,9 @@ def parse_feed(raw, source, checked_at):
             "region": region_type(location), "location": location or "근무지 확인 필요",
             "deadline": deadline_value(description),
             "published_at": published_date(field(item, "pubdate") or field(item, "published") or field(item, "date")),
-            "first_seen": checked_at, "last_seen": checked_at, "collected_at": checked_at, "location_detail": location or "상세 근무지 원문 확인 필요", "origin": "rss",
+            "first_seen": checked_at, "last_seen": checked_at, "collected_at": checked_at, "location_detail": location or "상세 근무지 원문 확인 필요", "origin": "rss", "_qualification_text": description,
         })
-    return jobs, len(items)
+    return [qualified for job in jobs if (qualified := qualify_job(job))], len(items)
 
 
 def parse_saramin(raw, source, checked_at):
@@ -254,9 +255,9 @@ def parse_saramin(raw, source, checked_at):
             "employment": employment_type(employment), "employment_evidence": employment or "명시 정보 없음",
             "region": region_type(location), "location": location or "근무지 확인 필요",
             "deadline": deadline, "published_at": timestamp("posting-timestamp"),
-            "first_seen": checked_at, "last_seen": checked_at, "collected_at": checked_at, "location_detail": location or "상세 근무지 원문 확인 필요", "origin": "api",
+            "first_seen": checked_at, "last_seen": checked_at, "collected_at": checked_at, "location_detail": location or "상세 근무지 원문 확인 필요", "origin": "api", "_qualification_text": evidence,
         })
-    return jobs, len(items)
+    return [qualified for job in jobs if (qualified := qualify_job(job))], len(items)
 
 
 def fetch_saramin(source):
@@ -327,14 +328,14 @@ ADAPTERS = {
 
 def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
     checked_at = checked_at or now_iso()
-    prior_jobs = [dict(job) for job in previous.get("jobs", [])]
+    prior_jobs = [qualified for job in previous.get("jobs", []) if (qualified := qualify_job(job))]
     for job in prior_jobs:
         job["region"] = region_type(job.get("location", ""))
         job.setdefault("location_detail", job.get("location", "상세 근무지 원문 확인 필요"))
         job.setdefault("collected_at", job.get("last_seen"))
     existing = {job["id"]: dict(job) for job in prior_jobs}
     prior_status = {source["id"]: source for source in previous.get("sources", [])}
-    discoveries = {item["id"]: dict(item) for item in previous.get("discoveries", [])}
+    discoveries = {qualified["id"]: qualified for item in previous.get("discoveries", []) if (qualified := qualify_job(item))}
     statuses = []
     successes = 0
     for source in sorted(sources, key=lambda item: PRIORITIES.get(kind(item), 99)):

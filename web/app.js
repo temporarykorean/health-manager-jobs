@@ -96,7 +96,7 @@ function card(job) {
   const evidence = element("details", "evidence");
   evidence.append(element("summary", "", "출처와 분류 기준 확인"));
   const ul = element("ul");
-  [`출처: ${job.source}`, `게시일: ${dateText(job.published_at)}`, `상세 근무지: ${job.location_detail || "원문 확인 필요"}`, `키워드 근거: ${job.keyword_evidence || "제목 또는 출처의 직무명"}`, `고용형태 근거: ${job.employment_evidence || "명시 정보 없음"}`, `마지막 확인: ${dateText(job.last_seen, true)}`,
+  [`출처: ${job.source}`, `게시일: ${dateText(job.published_at)}`, `상세 근무지: ${job.location_detail || "원문 확인 필요"}`, `간호사 자격 근거: ${job.qualification_evidence || "원문 확인 필요"}`, `키워드 근거: ${job.keyword_evidence || "제목 또는 출처의 직무명"}`, `고용형태 근거: ${job.employment_evidence || "명시 정보 없음"}`, `마지막 확인: ${dateText(job.last_seen, true)}`,
     job.origin === "manual" ? "초기 공고는 직접 확인한 자료입니다. 자동 갱신 대상이 아닙니다." : "연결된 출처에서 확인한 정보입니다. 최신 접수 여부는 원문을 확인해주세요."].forEach(text => ul.append(element("li", "", text)));
   evidence.append(ul);
   article.append(top, heading, badges, element("p", "job-location", job.location), bottom, evidence);

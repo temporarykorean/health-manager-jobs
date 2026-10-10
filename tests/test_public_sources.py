@@ -27,7 +27,8 @@ class PublicSourceTests(unittest.TestCase):
     def test_all_keywords_in_feed_body(self):
         for keyword in SEARCH_KEYWORDS:
             raw=f'<rss><channel><item><title>직원 채용</title><link>https://example.org/1</link><description>{keyword} 자격</description></item></channel></rss>'.encode()
-            self.assertEqual(len(parse_feed(raw,SOURCE,CHECKED)[0]),1,keyword)
+            expected=0 if keyword in ('산업보건','안전보건') else 1
+            self.assertEqual(len(parse_feed(raw,SOURCE,CHECKED)[0]),expected,keyword)
     def test_terms_expiry_blocks_requests(self):
         with patch('collector.fetch_feed',side_effect=AssertionError('must not fetch')):
             result,_=collect({},[SOURCE],checked_at='2027-02-01T20:00:00+09:00')
