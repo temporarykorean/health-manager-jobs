@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "attempted_at": "2026-10-10T20:43:37+09:00",
-  "last_success_at": "2026-10-10T20:43:37+09:00",
+  "attempted_at": "2026-10-10T20:45:33+09:00",
+  "last_success_at": "2026-10-10T20:45:33+09:00",
   "jobs": [
     {
       "id": "initial-seoul-266",
@@ -43,8 +43,8 @@
       "id": "airport",
       "name": "인천국제공항공사",
       "homepage": "https://www.airport.kr/co_ko/849/subview.do?FNCT_CODE=229",
-      "attempted_at": "2026-10-10T20:43:37+09:00",
-      "last_success_at": "2026-10-10T20:43:37+09:00",
+      "attempted_at": "2026-10-10T20:45:33+09:00",
+      "last_success_at": "2026-10-10T20:45:33+09:00",
       "status": "ok",
       "feed_count": 17,
       "matched_count": 0,
@@ -54,8 +54,8 @@
       "id": "mohw",
       "name": "보건복지부 채용 RSS",
       "homepage": "https://www.mohw.go.kr/menu.es?mid=a10807000000",
-      "attempted_at": "2026-10-10T20:43:37+09:00",
-      "last_success_at": "2026-10-10T20:43:37+09:00",
+      "attempted_at": "2026-10-10T20:45:33+09:00",
+      "last_success_at": "2026-10-10T20:45:33+09:00",
       "status": "ok",
       "feed_count": 30,
       "matched_count": 0,
@@ -65,7 +65,7 @@
       "id": "saramin",
       "name": "사람인",
       "homepage": "https://www.saramin.co.kr",
-      "attempted_at": "2026-10-10T20:43:37+09:00",
+      "attempted_at": "2026-10-10T20:45:33+09:00",
       "last_success_at": null,
       "status": "pending",
       "message": "API 승인 및 키 연결 대기 · 자동 수집 미연결"
