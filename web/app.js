@@ -83,6 +83,7 @@ function card(job) {
   const badges = element("div", "badges");
   const employmentClass = job.employment === "정규직" ? "regular" : job.employment === "비정규직" ? "nonregular" : "";
   badges.append(element("span", `badge ${employmentClass}`, job.employment), element("span", "badge", job.region));
+  if (job.relevance) badges.append(element("span", "badge", job.relevance));
   if (job.origin === "manual") badges.append(element("span", "badge", "초기 직접 확인"));
   const bottom = element("div", "card-bottom");
   const days = daysUntil(job.deadline);

@@ -50,3 +50,9 @@ assert.equal(vm.runInContext('daysUntil("2026-10-15T23:00:00+09:00", Date.parse(
 assert.equal(vm.runInContext('daysUntil("2026-10-16T09:00:00+09:00", Date.parse("2026-10-15T23:00:00+09:00"))', context), 1, "한국 날짜 기준 내일 마감");
 assert.equal(ids.get("notice").hidden, false, "수집 미확인 상태 표시");
 console.log("필터 조합·검색·관심 저장·마감 표시·안전한 링크 검증 통과 (브라우저 시각 검증 제외)");
+assert.equal(ids.get('region-filters').children.some(button => button.textContent === '인천'), true, '인천 독립 필터');
+const newest = vm.runInContext(`filteredJobs([
+ {id:'old',title:'산업간호사',company:'A',source:'ALIO',location:'인천',region:'인천',employment:'정규직',published_at:'2026-10-01'},
+ {id:'new',title:'산업간호사',company:'B',source:'ALIO',location:'인천',region:'인천',employment:'정규직',published_at:'2026-10-09'}
+], {...state, sort:'recent', region:'인천', employment:'전체', query:'', savedOnly:false}, new Set())`, context);
+assert.equal(newest[0].id, 'new', '게시일 최신순');

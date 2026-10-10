@@ -36,6 +36,16 @@ def clean_text(value):
                      for line in value.splitlines()).strip()
 
 
+def recruitment_evidence(text):
+    # 모든 현장직의 공통 법규/기초교육 문구를 보건 직무 요구로 오인하지 않습니다.
+    return re.sub(r"산업안전보건법|건설업\s*기초\s*안전보건교육|안전보건교육\s*이수(?:자|\s*가능자)?", "", text)
+
+
+def specific_original(url):
+    parts = urlsplit(url)
+    return bool(re.search(r"/(?:o/)?\d+/?$", parts.path) or any(re.search(r"(?:idx|id|sn|seq|no|num)$", key, re.I) and value for key, value in parse_qsl(parts.query)))
+
+
 def employment_type(text):
     # 미래의 정규직 전환과 '전환 대상이 아님'은 현재 채용형태가 아닙니다.
     text = re.sub(r"정규직\s*(?:전환|채용전환)[^\n,;]*", "", text)
@@ -102,7 +112,9 @@ def deduplicate_jobs(jobs):
     def normalize(value):
         return re.sub(r"[\s\W_]+", "", value.casefold().replace("(주)", "").replace("주식회사", ""))
     for job in sorted(jobs, key=lambda j: (j.get("source_priority", 99), j.get("id", ""))):
-        keys = {("url", canonical_url(url)) for url in (job.get("url"), job.get("employer_url")) if url}
+        keys = {("url", canonical_url(job["url"]))}
+        if job.get("employer_url") and specific_original(job["employer_url"]):
+            keys.add(("url", canonical_url(job["employer_url"])))
         if all(job.get(key) for key in ("company", "title", "location", "published_at")) and "확인 필요" not in job["location"]:
             keys.add(("posting", normalize(job["company"]), normalize(job["title"]), normalize(job["location"]), job["published_at"][:10]))
         if not keys & seen:
@@ -202,7 +214,7 @@ def parse_feed(raw, source, checked_at):
             "region": region_type(location), "location": location or "근무지 확인 필요",
             "deadline": deadline_value(description),
             "published_at": published_date(field(item, "pubdate") or field(item, "published") or field(item, "date")),
-            "first_seen": checked_at, "last_seen": checked_at, "origin": "rss",
+            "first_seen": checked_at, "last_seen": checked_at, "collected_at": checked_at, "location_detail": location or "상세 근무지 원문 확인 필요", "origin": "rss",
         })
     return jobs, len(items)
 
@@ -242,7 +254,7 @@ def parse_saramin(raw, source, checked_at):
             "employment": employment_type(employment), "employment_evidence": employment or "명시 정보 없음",
             "region": region_type(location), "location": location or "근무지 확인 필요",
             "deadline": deadline, "published_at": timestamp("posting-timestamp"),
-            "first_seen": checked_at, "last_seen": checked_at, "origin": "api",
+            "first_seen": checked_at, "last_seen": checked_at, "collected_at": checked_at, "location_detail": location or "상세 근무지 원문 확인 필요", "origin": "api",
         })
     return jobs, len(items)
 
@@ -315,7 +327,7 @@ ADAPTERS = {
 
 def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
     checked_at = checked_at or now_iso()
-    prior_jobs = previous.get("jobs", [])
+    prior_jobs = [dict(job) for job in previous.get("jobs", [])]
     for job in prior_jobs:
         job["region"] = region_type(job.get("location", ""))
         job.setdefault("location_detail", job.get("location", "상세 근무지 원문 확인 필요"))
@@ -340,6 +352,13 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
             raw = fetcher(source)
             jobs, count = parser(raw, source, checked_at)
             warnings = json.loads(raw).get("warnings", []) if adapter(source) in {"alio", "greeting"} else []
+            if adapter(source) == "alio":
+                accepted_ids = {job["id"] for job in jobs}
+                # 이번 실행에서 상세를 다시 확인한 비관련 공고만 제거. 접속 실패 자료는 보존.
+                for document in json.loads(raw)["documents"]:
+                    rejected = "alio-" + document["row"]["idx"]
+                    if rejected not in accepted_ids:
+                        existing.pop(rejected, None)
             destination = discoveries if kind(source) == "search" else existing
             for job in jobs:
                 prior = destination.get(job["id"], {})
@@ -370,6 +389,7 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
         saved = [job for job in final_jobs if job.get("source_id") == status["id"]]
         status["saved_count"] = len(saved)
         status["active_count"] = sum(active_job(job, checked_at) for job in saved)
+        status["message"] += f" · 중복 제거 후 저장 {len(saved)}건"
     return {
         "schema_version": 2, "attempted_at": checked_at,
         "last_success_at": checked_at if successes else previous.get("last_success_at"),

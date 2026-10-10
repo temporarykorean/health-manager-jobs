@@ -70,3 +70,12 @@ class DeduplicationTests(unittest.TestCase):
         self.assertEqual(len(deduplicate_jobs([a,b])),1)
     def test_deadline_timezone(self):
         self.assertTrue(active_job({'deadline':'2026-10-10T12:00:00Z'},'2026-10-10T20:00:00+09:00'))
+
+class RelevanceTests(unittest.TestCase):
+    def test_generic_safety_certificate_is_not_health_job(self):
+        payload=json.loads(alio());payload['documents'][0]['html']=payload['documents'][0]['html'].replace('보건관리자 선임 자격','건설업 기초 안전보건교육 이수자. 산업안전보건법 준수')
+        raw=json.dumps(payload)
+        self.assertEqual(parse_alio(raw.encode(),SOURCE,CHECKED)[0],[])
+    def test_shared_employer_recruiting_homepage_does_not_merge_jobs(self):
+        jobs=[dict(id=str(i),url=f'https://alio.kr/view?idx={i}',employer_url='https://company.kr/jobs',title=str(i)) for i in range(2)]
+        self.assertEqual(len(deduplicate_jobs(jobs)),2)

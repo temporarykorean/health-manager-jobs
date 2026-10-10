@@ -159,7 +159,7 @@ def fetch_alio(source):
 
 
 def parse_alio(raw, source, checked_at):
-    from collector import clean_text, employment_type, region_type, safe_url, RELATED_PATTERN
+    from collector import clean_text, employment_type, region_type, safe_url, RELATED_PATTERN, recruitment_evidence
     payload = json.loads(raw)
     jobs = []
     for doc in payload['documents']:
@@ -171,7 +171,7 @@ def parse_alio(raw, source, checked_at):
         title_match = re.search(r'<p[^>]*class="titleH2"[^>]*>([\s\S]*?)</p>', text)
         title = clean_text(title_match[1]) if title_match else row['title']
         fields = {clean_text(key): clean_text(value) for key, value in re.findall(r'<th[^>]*>([\s\S]*?)</th>\s*<td[^>]*>([\s\S]*?)</td>', text)}
-        evidence = title + '\n' + body + '\n' + fields.get('우대조건','') + '\n' + fields.get('근무분야','')
+        evidence = recruitment_evidence(title + '\n' + body + '\n' + fields.get('우대조건','') + '\n' + fields.get('근무분야',''))
         match = re.search(RELATED_PATTERN, evidence)
         if not match:
             continue
@@ -198,7 +198,8 @@ def parse_alio(raw, source, checked_at):
                      'location_detail': detail_location[1][:160] if detail_location else '상세 근무지 원문 확인 필요',
                      'deadline': deadline, 'published_at': published,
                      'first_seen': checked_at, 'last_seen': checked_at, 'collected_at': checked_at,
-                     'origin': 'page', 'keyword_evidence': clean_text(evidence[max(0,match.start()-30):match.end()+100])[:160]})
+                     'origin': 'page', 'relevance': '보건 직무' if re.search(r'보건\s*관리|산업\s*간호|사업장\s*간호|산업\s*보건|EHS\s*보건', evidence, re.I) else '관련 직무 확인 필요',
+                     'keyword_evidence': clean_text(evidence[max(0,match.start()-30):match.end()+100])[:160]})
     # 메타는 fetcher가 전달한 경고를 collect에서 별도로 읽습니다.
     return jobs, payload['scanned']
 
