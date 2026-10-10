@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "attempted_at": "2026-10-10T20:14:21+09:00",
+  "last_success_at": null,
+  "jobs": [
+    {
+      "id": "initial-seoul-266",
+      "title": "서울신문 보건관리자 채용",
+      "company": "서울신문",
+      "url": "https://recruit.seoul.co.kr/recruit/view.php?idx=266",
+      "source_id": "manual",
+      "source": "서울신문 채용 · 공식 원문 직접 확인",
+      "employment": "비정규직",
+      "employment_evidence": "공식 공고의 고용형태 항목에 계약직으로 명시됨",
+      "region": "확인 필요",
+      "location": "근무지 확인 필요 · 회사명만으로 서울로 분류하지 않음",
+      "deadline": "2026-10-15T18:00:00+09:00",
+      "published_at": "2026-10-06",
+      "first_seen": "2026-10-10T20:00:00+09:00",
+      "last_seen": "2026-10-10T20:00:00+09:00",
+      "origin": "manual"
+    },
+    {
+      "id": "initial-canon-21988537",
+      "title": "2026년 10월 캐논코리아 보건관리 신입사원(계약직) 채용",
+      "company": "캐논코리아",
+      "url": "https://recruit.lotte.co.kr/apply/announcement/detail/21988537?compcd=60005",
+      "source_id": "manual",
+      "source": "롯데그룹 채용 · 공식 원문 직접 확인",
+      "employment": "비정규직",
+      "employment_evidence": "계약직으로 채용하며 1년 후 평가에 따라 계약 연장을 검토함",
+      "region": "경기",
+      "location": "경기 안산시 · 안산사업소",
+      "deadline": "2026-10-15T23:00:00+09:00",
+      "published_at": "2026-10-02",
+      "first_seen": "2026-10-10T20:00:00+09:00",
+      "last_seen": "2026-10-10T20:00:00+09:00",
+      "origin": "manual"
+    }
+  ],
+  "sources": [
+    {
+      "id": "airport",
+      "name": "인천국제공항공사",
+      "homepage": "https://www.airport.kr/co_ko/849/subview.do?FNCT_CODE=229",
+      "attempted_at": "2026-10-10T20:14:21+09:00",
+      "last_success_at": null,
+      "status": "error",
+      "message": "접속 또는 데이터 처리 실패 · 이전 공고 유지",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    },
+    {
+      "id": "mohw",
+      "name": "보건복지부 채용 RSS",
+      "homepage": "https://www.mohw.go.kr/menu.es?mid=a10807000000",
+      "attempted_at": "2026-10-10T20:14:21+09:00",
+      "last_success_at": null,
+      "status": "error",
+      "message": "접속 또는 데이터 처리 실패 · 이전 공고 유지",
+      "detail": "URLError: <urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+name: 보건관리자 공고 수집 및 웹페이지 배포
+
+on:
+  workflow_dispatch:
+  schedule:
+    # UTC 00:17 = 한국 시간 오전 09:17. 실행 시각은 GitHub 상황에 따라 늦어질 수 있습니다.
+    - cron: '17 0 * * *'
+  push:
+    branches: [main]
+    paths-ignore: ['data/jobs.json']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: health-jobs-pages
+  cancel-in-progress: false
+
+jobs:
+  collect-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      collection_failed: ${{ steps.collect.outputs.failed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: 파이썬 준비
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: 분류 및 데이터 보존 검증
+        run: |
+          python -m unittest discover -s tests -v
+          node --check web/app.js
+          node tests/test_frontend.mjs
+      - name: 공식 RSS 수집
+        id: collect
+        shell: bash
+        run: |
+          set +e
+          python collector.py
+          result=$?
+          set -e
+          if [ "$result" -eq 2 ]; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::모든 출처 수집 실패. 기존 공고와 실패 상태를 배포합니다."
+          elif [ "$result" -ne 0 ]; then
+            exit "$result"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 다음 실행을 위해 수집 기록 저장
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/jobs.json
+          if ! git diff --cached --quiet; then
+            git commit -m '공고 수집 기록 업데이트'
+            git push origin HEAD:main
+          fi
+      - name: 웹페이지 생성
+        run: python build.py
+      - name: 배포 파일 업로드
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: collect-and-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 공개 웹페이지 배포
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  report:
+    needs: [collect-and-build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 수집 전체 실패를 실행 기록에 표시
+        if: needs.collect-and-build.outputs.collection_failed == 'true'
+        run: |
+          echo '웹페이지는 배포했지만 모든 RSS 수집이 실패했습니다. 사이트의 수집 상태를 확인하세요.'
+          exit 1
