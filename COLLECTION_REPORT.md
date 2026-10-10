@@ -37,3 +37,9 @@ API 키/추가 계정 설정 없이 수집 범위를 확장했습니다. 기존 
 Python 테스트 46개 및 JS 필터/관심 저장/정렬/NEW/마감 공고 검증 통과. 공개 배포 후 익명 HTTP 200·HTML/JS/CSS/데이터 및 저장소 최신 데이터 일치 확인 성공. 매일 KST 09:17 자동 실행 유지. 실제 네트워크 수집은 GitHub Actions에서 검증했습니다.
 
 Mac 실행: cd /Users/jang-ujin/health-manager-jobs/site 후 python3 collector.py, python3 build.py. 사람인 승인 후 Actions secret SARAMIN_ACCESS_KEY만 연결하면 됩니다. 같은 ATS 기업은 sources.json 설정으로 추가하며 개별 회사 수집기를 복제하지 않습니다. 수집 어댑터 public_ats.py(공식 무인증 GET), official_pages.py(공식 표), 기존 public_careers.py(Greeting/ALIO)를 사용합니다.
+
+## 2026-10-10 22:47 공공 API 확장 후 재실행
+
+Actions 38057076063에서 테스트 58개 통과, 기존 8개 활성 소스 수집 성공. 공고 총10건(자동8 + 기존 직접확인2) 유지. 신규 공공 API 4개(ALIO 공식, 경기 잡아바, 경기 민간, 한국관광공사)는 인증키 미등록으로 연결 대기·수집0건. 실제 샘플 API 접속 확인과 인증된 실수집 성공은 구분합니다.
+
+공공 API의 개인/자동승인/형식/필터 및 키 발급·연결 절차는 PUBLIC_API_GUIDE.md 참고. 사용자는 아직 키 없음. 고용24 개인 개방 예외(일반 채용 목록/상세 불가) 확인. 경기 무키 응답은 고정 첫5건·페이지무시·마감자료 포함이므로 신규 모집공고로 넣지 않았습니다.
