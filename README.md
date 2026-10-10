@@ -57,7 +57,10 @@ python3 build.py
 - RSS에 근무지나 마감일이 없으면 확인 필요가 많을 수 있습니다. 상세 첨부파일/PDF는 현재 분석하지 않습니다.
 - 마감일은 명시된 마감일/접수기간에서만 추출합니다. 시각이 없으면 해당 날짜의 한국 시간 23:59:59를 기준으로 표시합니다.
 - RSS에서 사라진 공고를 바로 삭제하지 않습니다. 마감일 미기재 공고가 계속 보일 수 있으며, 접수 여부는 원문에서 확인해야 합니다.
-- 두 RSS는 일부 공공기관 공고만 제공합니다. 사람인·잡코리아의 전체 공고 수집은 연결되어 있지 않습니다.
+- 검색 키워드: 보건관리자, 산업간호사 (띄어쓰기 변형 포함).
+- 사람인 공식 API 수집을 준비했습니다. 승인 후 발급받은 키를 GitHub 저장소 Settings → Secrets and variables → Actions에 `SARAMIN_ACCESS_KEY`라는 이름으로 등록하고 워크플로를 실행하면 연결됩니다. 키는 채팅이나 소스에 넣지 않습니다. 키 미설정 시 화면에 연결 대기로 표시합니다.
+- 사람인 키워드별 최대 10페이지(110건씩)를 수집하며 초과 시 실패로 표시하고 이전 데이터를 보존합니다.
+- 잡코리아 공식 API는 개인 사용 승인 제한으로 미연결입니다. 두 사이트의 키워드 검색 링크를 제공합니다.
 
 ## 검증
 
@@ -84,3 +87,7 @@ python3 build.py
 
 출처: [공항 채용 게시판](https://www.airport.kr/co_ko/849/subview.do?FNCT_CODE=229), [보건복지부 RSS 안내](https://www.mohw.go.kr/menu.es?mid=a10807000000), [캐논코리아 원문](https://recruit.lotte.co.kr/apply/announcement/detail/21988537?compcd=60005), [서울신문 원문](https://recruit.seoul.co.kr/recruit/view.php?idx=266).
 배포 설정 참고: [GitHub Pages 공식 안내](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+## 추가 채용 사이트
+
+LinkedIn은 보건관리자·산업간호사 검색 바로가기를, CATCH는 채용 검색 페이지 바로가기를 제공합니다. 공고 데이터 자동 수집은 연결하지 않았습니다. CATCH 공식 Open API 안내는 기업정보용이며 채용공고 제공 API는 확인되지 않았습니다.

@@ -3,6 +3,7 @@
 import hashlib
 import html
 import json
+import os
 import re
 import sys
 import tempfile
@@ -16,6 +17,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parent
 KST = timezone(timedelta(hours=9))
 MAX_BYTES = 3_000_000
+SEARCH_KEYWORDS = ("보건관리자", "산업간호사")
 
 
 def now_iso():
@@ -178,7 +180,81 @@ def parse_feed(raw, source, checked_at):
     return jobs, len(items)
 
 
+def parse_saramin(raw, source, checked_at):
+    payload = json.loads(raw)
+    if not isinstance(payload.get("jobs"), dict):
+        raise ValueError("사람인 API 응답 오류")
+    items = payload["jobs"].get("job", [])
+    if not isinstance(items, list):
+        raise ValueError("사람인 공고 목록 형식 오류")
+    jobs = []
+    for item in items:
+        position = item.get("position", {})
+        title = clean_text(position.get("title", ""))
+        evidence = title + " " + str(item.get("keyword", "")) + " " + position.get("job-code", {}).get("name", "")
+        if not re.search(r"보건\s*관리(?:자|원)?|산업\s*간호", evidence):
+            continue
+        link = safe_url(item.get("url", ""))
+        if not link or not title:
+            continue
+        location = clean_text(position.get("location", {}).get("name", ""))
+        employment = clean_text(position.get("job-type", {}).get("name", ""))
+        def timestamp(name):
+            try:
+                value = int(item.get(name, 0))
+                return datetime.fromtimestamp(value, KST).isoformat(timespec="seconds") if value > 0 else None
+            except (ValueError, TypeError, OverflowError, OSError):
+                return None
+        deadline = timestamp("expiration-timestamp") if str(item.get("close-type", {}).get("code")) == "1" else None
+        if str(item.get("active")) == "0" and not deadline:
+            deadline = checked_at
+        jobs.append({
+            "id": hashlib.sha256(canonical_url(link).encode()).hexdigest()[:20],
+            "title": title, "company": clean_text(item.get("company", {}).get("detail", {}).get("name", "")) or "회사명 확인 필요",
+            "url": link, "source_id": source["id"], "source": source["name"],
+            "employment": employment_type(employment), "employment_evidence": employment or "명시 정보 없음",
+            "region": region_type(location), "location": location or "근무지 확인 필요",
+            "deadline": deadline, "published_at": timestamp("posting-timestamp"),
+            "first_seen": checked_at, "last_seen": checked_at, "origin": "api",
+        })
+    return jobs, len(items)
+
+
+def fetch_saramin(source):
+    key = os.environ.get("SARAMIN_ACCESS_KEY", "").strip()
+    if not key:
+        raise ValueError("사람인 API 키 미설정")
+    combined = []
+    # 키워드를 따로 요청하여 두 단어를 모두 요구하는 AND 검색을 피합니다.
+    for keyword in SEARCH_KEYWORDS:
+        for page in range(10):
+            query = urlencode({"access-key": key, "keywords": keyword, "start": page, "count": 110, "sort": "pd"})
+            request = Request(source["url"] + "?" + query, headers={"Accept": "application/json", "User-Agent": "HealthJobs/1.0"})
+            try:
+                with urlopen(request, timeout=20) as response:
+                    raw = response.read(MAX_BYTES + 1)
+                if len(raw) > MAX_BYTES:
+                    raise ValueError("응답 크기 초과")
+                data = json.loads(raw)
+                if not isinstance(data.get("jobs"), dict):
+                    raise ValueError("응답 형식 오류")
+                items = data["jobs"].get("job", [])
+                if not isinstance(items, list):
+                    raise ValueError("공고 목록 형식 오류")
+                combined.extend(items)
+                if (page + 1) * 110 >= int(data["jobs"].get("total", len(items))):
+                    break
+                if page == 9:
+                    raise ValueError("페이지 수집 한도 초과")
+            except Exception:
+                # URL에 API 키가 있으므로 원본 예외나 응답 내용을 출력하지 않습니다.
+                raise ValueError("사람인 API 요청 실패 · 키/승인/호출 한도 확인") from None
+    return json.dumps({"jobs": {"job": combined}}, ensure_ascii=False).encode()
+
+
 def fetch_feed(source):
+    if source.get("type") == "saramin":
+        return fetch_saramin(source)
     request = Request(source["url"], headers={"User-Agent": "HealthJobsRSS/1.0", "Accept": "application/rss+xml, application/xml, text/xml"})
     with urlopen(request, timeout=20) as response:
         data = response.read(MAX_BYTES + 1)
@@ -207,8 +283,13 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
         old = prior_status.get(source["id"], {})
         status = {"id": source["id"], "name": source["name"], "homepage": source["homepage"],
                   "attempted_at": checked_at, "last_success_at": old.get("last_success_at")}
+        if source.get("type") == "saramin" and not os.environ.get("SARAMIN_ACCESS_KEY", "").strip():
+            status.update(status="pending", message="API 승인 및 키 연결 대기 · 자동 수집 미연결")
+            statuses.append(status)
+            continue
         try:
-            jobs, count = parse_feed(fetcher(source), source, checked_at)
+            parser = parse_saramin if source.get("type") == "saramin" else parse_feed
+            jobs, count = parser(fetcher(source), source, checked_at)
             for job in jobs:
                 prior = existing.get(job["id"], {})
                 job["first_seen"] = prior.get("first_seen", checked_at)

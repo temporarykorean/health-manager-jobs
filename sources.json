@@ -12,5 +12,13 @@
     "url": "https://www.mohw.go.kr/rss/board.es?mid=a10501040000&bid=0003&cg_code=C03&info=",
     "homepage": "https://www.mohw.go.kr/menu.es?mid=a10807000000",
     "company": "기관명 확인 필요"
+  },
+  {
+    "id": "saramin",
+    "name": "사람인",
+    "type": "saramin",
+    "url": "https://oapi.saramin.co.kr/job-search",
+    "homepage": "https://www.saramin.co.kr",
+    "company": "회사명 확인 필요"
   }
 ]

@@ -96,7 +96,7 @@ function card(job) {
   evidence.append(element("summary", "", "출처와 분류 기준 확인"));
   const ul = element("ul");
   [`출처: ${job.source}`, `고용형태 근거: ${job.employment_evidence || "명시 정보 없음"}`, `마지막 확인: ${dateText(job.last_seen, true)}`,
-    job.origin === "manual" ? "초기 공고는 직접 확인한 자료입니다. 자동 갱신 대상이 아닙니다." : "RSS에서 확인한 정보입니다. 최신 접수 여부는 원문을 확인해주세요."].forEach(text => ul.append(element("li", "", text)));
+    job.origin === "manual" ? "초기 공고는 직접 확인한 자료입니다. 자동 갱신 대상이 아닙니다." : "연결된 출처에서 확인한 정보입니다. 최신 접수 여부는 원문을 확인해주세요."].forEach(text => ul.append(element("li", "", text)));
   evidence.append(ul);
   article.append(top, heading, badges, element("p", "job-location", job.location), bottom, evidence);
   return article;
@@ -109,7 +109,7 @@ function renderSources() {
     const top = element("div", "source-card-top");
     const link = element("a", "", source.name);
     link.href = safeLink(source.homepage); link.target = "_blank"; link.rel = "noopener noreferrer";
-    top.append(link, element("span", `source-status ${source.status !== "ok" ? "error" : ""}`, source.status === "ok" ? "수집 성공" : source.status === "error" ? "수집 실패" : "접속 확인 전"));
+    top.append(link, element("span", `source-status ${source.status !== "ok" ? "error" : ""}`, source.status === "ok" ? "수집 성공" : source.status === "error" ? "수집 실패" : source.status === "pending" ? "연결 대기" : "접속 확인 전"));
     section.append(top, element("p", "", source.message || "자동 수집 확인 전"), element("p", "", `최근 성공: ${dateText(source.last_success_at, true)}`));
     $("sources").append(section);
   });

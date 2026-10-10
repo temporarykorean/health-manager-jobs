@@ -39,6 +39,8 @@ jobs:
           node tests/test_frontend.mjs
       - name: 공식 RSS 수집
         id: collect
+        env:
+          SARAMIN_ACCESS_KEY: ${{ secrets.SARAMIN_ACCESS_KEY }}
         shell: bash
         run: |
           set +e
