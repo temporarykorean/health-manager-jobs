@@ -89,7 +89,7 @@ def job(source, checked_at, title, company, url, location='', employment='', pub
 
 def alio_rows(value):
     code = str(value.get('resultCode', ''))
-    if code not in ('0', '00', '0000'):
+    if code not in ('0', '00', '0000', '200'):
         raise ValueError('ALIO API 응답 오류 (코드 ' + code[:10] + ')')
     result = value.get('result', [])
     if isinstance(result, dict):

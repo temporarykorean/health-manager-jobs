@@ -5,7 +5,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from collector import ADAPTERS, collect
 from public_apis import (parse_alio_api, parse_gg_api, parse_kto_api, fetch_alio_api,
-                         fetch_gg_api, read_api, api_employment, gg_rows, iso_day)
+                         fetch_gg_api, read_api, api_employment, gg_rows, iso_day, alio_rows)
 from source_policy import pending_reason
 
 CHECKED = '2026-10-10T22:00:00+09:00'
@@ -33,6 +33,9 @@ class PublicApiTests(unittest.TestCase):
         self.assertEqual(j['deadline'],'2026-10-15T23:59:59+09:00')
         self.assertEqual(j['nursing_eligibility'],'간호사 면허 자격 명시')
         self.assertNotIn('_qualification_text',j)
+    def test_alio_live_success_code_200(self):
+        self.assertEqual(alio_rows({'resultCode':200,'result':[{'item':ROW}]}),[ROW])
+        with self.assertRaises(ValueError): alio_rows({'resultCode':401,'result':[]})
     def test_cert_only_and_general_safety_excluded(self):
         row=dict(ROW,recrutPbancTtl='산업안전기사',aplyQlfcCn='자격요건: 산업안전기사 필수')
         self.assertEqual(parse_alio_api(raw([row]),ALIO,CHECKED)[0],[])
