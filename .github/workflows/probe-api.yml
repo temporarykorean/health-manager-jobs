@@ -1,0 +1,14 @@
+name: Public API investigation
+on:
+  push:
+    branches: [inspect-public-apis]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v6
+      - run: python3 scripts/probe_public_apis.py
