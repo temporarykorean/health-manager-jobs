@@ -1,0 +1,17 @@
+name: 공개 채용 소스 일회성 접근 조사
+on:
+  workflow_dispatch:
+  push:
+    paths: ['scripts/probe_sources.py', '.github/workflows/source-check.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python scripts/probe_sources.py
