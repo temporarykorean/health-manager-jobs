@@ -9,7 +9,7 @@ def qualify_job(job):
     job = dict(job)
     body = job.pop('_qualification_text', '')
     title = job.get('title', '')
-    evidence = body or (job.get('qualification_evidence') if job.get('nursing_eligibility') == '간호사 면허 자격 명시' else '') or job.get('keyword_evidence', '')
+    evidence = body or '\n'.join(filter(None, [job.get('qualification_evidence') if job.get('nursing_eligibility') == '간호사 면허 자격 명시' else '', job.get('keyword_evidence', '')]))
     evidence = re.sub(r'[\u200b-\u200d\ufeff]', '', evidence)
     if re.search(OTHER_ROLE, title) and not re.search(HEALTH_ROLE + r'|간호(?:사|직)', title):
         return None

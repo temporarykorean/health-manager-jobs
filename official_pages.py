@@ -58,16 +58,18 @@ def parse_dlenc(raw,source,checked_at):
         fields={}; health=[]
         for table in tables:
             rows=re.findall(r'<tr\b[^>]*>([\s\S]*?)</tr>',table,re.I)
-            headers=[clean_text(c) for c in re.findall(r'<th\b[^>]*>([\s\S]*?)</th>',table,re.I)]
-            values=[[clean_text(c) for c in re.findall(r'<td\b[^>]*>([\s\S]*?)</td>',r,re.I)] for r in rows]
-            if '채용대상' in headers:
-                value=next((v for v in values if len(v)==len(headers)),[])
-                fields.update(zip(headers,value))
-            if '모집분야' in headers:
-                for values_row in values:
-                    mapping=dict(zip(headers,values_row))
-                    if re.search(HEALTH_ROLE,mapping.get('모집분야','')):
-                        health.append(mapping)
+            cells=[[clean_text(c) for c in re.findall(r'<t[hd]\b[^>]*>([\s\S]*?)</t[hd]>',r,re.I)] for r in rows]
+            for index, header_row in enumerate(cells):
+                headers=[re.sub(r'\s+','',c) for c in header_row]
+                if '채용대상' in headers:
+                    value=next((v for v in cells[index+1:] if len(v)==len(headers)),[])
+                    fields.update(zip(headers,value))
+                if '모집분야' in headers:
+                    for values_row in cells[index+1:]:
+                        if len(values_row)!=len(headers): continue
+                        mapping=dict(zip(headers,values_row))
+                        if re.search(HEALTH_ROLE,mapping.get('모집분야','')):
+                            health.append(mapping)
         # 다른 직렬, 메뉴, 이전/다음 공고에서 키워드를 가져오지 않습니다.
         if not health: continue
         row=doc['row']; location=' / '.join(dict.fromkeys(h.get('근무지','') for h in health))

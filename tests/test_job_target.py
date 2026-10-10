@@ -20,3 +20,8 @@ class NursingTargetTests(unittest.TestCase):
 
     def test_two_required_credentials_are_not_nurse_only(self):
         self.assertIsNone(self.job('보건관리자','필수: 간호사 면허 및 산업안전기사 모두 보유'))
+
+class PreservedQualificationTests(unittest.TestCase):
+ def test_separate_health_and_license_evidence_retained(self):
+  job={'title':'간호직 직원 채용','nursing_eligibility':'간호사 면허 자격 명시','qualification_evidence':'간호사 면허증 소지자','keyword_evidence':'보건관리자 근무 경력 3년 이상'}
+  self.assertIsNotNone(qualify_job(job))

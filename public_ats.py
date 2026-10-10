@@ -75,7 +75,7 @@ def parse_greenhouse(raw, source, checked_at):
     for item in payload['documents']:
         body = clean_text(html.unescape(html.unescape(item['content'])))
         title = clean_text(item.get('title', ''))
-        url = item.get('absolute_url', '')
+        url = source.get('original_url_overrides', {}).get(str(item['id'])) or item.get('absolute_url', '')
         if not public_url(url) or domain_matches(urlsplit(url).hostname,PORTAL_DOMAINS) or urlsplit(url).hostname not in source.get('allowed_hosts', []):
             continue
         # 공개 API는 updated_at을 제공하지만 최초 게시일과 같다고 단정하지 않습니다.

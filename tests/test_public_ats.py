@@ -21,6 +21,12 @@ class PublicATSTests(unittest.TestCase):
   self.assertEqual(jobs[0]['published_at'],None,'갱신일을 게시일로 표시하지 않음')
   self.assertEqual(jobs[0]['deadline'],None)
   self.assertEqual(jobs[0]['nursing_eligibility'],'간호사 면허 자격 명시')
+ def test_verified_specific_original_url_override(self):
+  source=dict(SOURCE,original_url_overrides={'1':'https://company.kr/original/1'})
+  jobs,_=parse_greenhouse(payload(),source,NOW)
+  self.assertEqual(jobs[0]['url'],'https://company.kr/original/1')
+  source['original_url_overrides']['1']='https://www.linkedin.com/jobs/1'
+  self.assertEqual(parse_greenhouse(payload(),source,NOW)[0],[])
  def test_non_nurse_safety_roles_excluded(self):
   self.assertEqual(parse_greenhouse(payload('산업안전기사','보건관리 업무 우대'),SOURCE,NOW)[0],[])
  def test_explicit_workplace_address(self):
@@ -42,6 +48,8 @@ class PublicATSTests(unittest.TestCase):
   jobs,count=parse_dlenc(json.dumps(data).encode(),source,NOW)
   self.assertEqual(count,1);self.assertEqual(jobs[0]['employment'],'비정규직');self.assertEqual(jobs[0]['region'],'경기')
   self.assertIsNone(jobs[0]['deadline']);self.assertIn('간호사 면허',jobs[0]['qualification_evidence'])
+  data['documents'][0]['html']=page.replace('<th>', '<td>').replace('</th>', '</td>')
+  self.assertEqual(len(parse_dlenc(json.dumps(data).encode(),source,NOW)[0]),1,'legacy td header')
   data['documents'][0]['html']=page.replace('보건관리','안전관제')+'<nav>보건관리자</nav>'
   self.assertEqual(parse_dlenc(json.dumps(data).encode(),source,NOW)[0],[])
  def test_dl_url_and_dates(self):
