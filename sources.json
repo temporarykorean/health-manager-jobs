@@ -1,5 +1,57 @@
 [
   {
+    "id": "alio-api",
+    "name": "잡알리오 공식 Open API",
+    "type": "api",
+    "adapter": "alio_api",
+    "url": "https://apis.data.go.kr/1051000/recruitment/list",
+    "homepage": "https://www.data.go.kr/data/15125273/openapi.do",
+    "documentation_url": "https://www.data.go.kr/data/15125273/openapi.do",
+    "required_env": [
+      "DATA_GO_KR_SERVICE_KEY"
+    ],
+    "pending_message": "공식 API 구현 완료 · DATA_GO_KR_SERVICE_KEY 발급/연결 대기"
+  },
+  {
+    "id": "gg-jobaba",
+    "name": "경기 잡아바 채용정보 API",
+    "type": "api",
+    "adapter": "gg_jobaba",
+    "url": "https://openapi.gg.go.kr/GGJOBABARECRUSTM",
+    "homepage": "https://www.data.go.kr/data/15119896/openapi.do",
+    "documentation_url": "https://www.data.go.kr/data/15119896/openapi.do",
+    "required_env": [
+      "GG_API_KEY"
+    ],
+    "pending_message": "공식 API 구현 완료 · GG_API_KEY 발급/연결 대기"
+  },
+  {
+    "id": "gg-worknet",
+    "name": "경기 민간 채용정보 API",
+    "type": "api",
+    "adapter": "gg_worknet",
+    "url": "https://openapi.gg.go.kr/EmplmntInfoStus",
+    "homepage": "https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=A05X0ZTRXTYLVVODO2N028928565&infSeq=1",
+    "documentation_url": "https://data.gg.go.kr/portal/data/service/selectServicePage.do?infId=A05X0ZTRXTYLVVODO2N028928565&infSeq=1",
+    "required_env": [
+      "GG_API_KEY"
+    ],
+    "pending_message": "공식 API 구현 완료 · GG_API_KEY 발급/연결 대기"
+  },
+  {
+    "id": "kto-api",
+    "name": "한국관광공사 채용정보 API",
+    "type": "api",
+    "adapter": "kto_api",
+    "url": "https://apis.data.go.kr/B551011/ktorecruitment/getDatament",
+    "homepage": "https://www.data.go.kr/data/15043125/openapi.do",
+    "documentation_url": "https://www.data.go.kr/data/15043125/openapi.do",
+    "required_env": [
+      "DATA_GO_KR_SERVICE_KEY"
+    ],
+    "pending_message": "공식 API 구현 완료 · DATA_GO_KR_SERVICE_KEY 발급/연결 대기"
+  },
+  {
     "id": "saramin",
     "name": "사람인",
     "type": "api",

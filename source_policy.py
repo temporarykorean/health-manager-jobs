@@ -61,7 +61,8 @@ def pending_reason(source, checked_at, available_adapters):
         urls = source.get('page_urls', [])
         if not urls or len(urls) > 10 or not all(direct_url_allowed(url, source) for url in urls):
             return '승인된 HTTPS 호스트·페이지 목록 필요 (최대 10개)'
-    approved_endpoints = {'saramin': 'https://oapi.saramin.co.kr/job-search', 'naver_search': 'https://openapi.naver.com/v1/search/webkr.json'}
+    from public_apis import ENDPOINTS
+    approved_endpoints = {**ENDPOINTS, 'saramin': 'https://oapi.saramin.co.kr/job-search', 'naver_search': 'https://openapi.naver.com/v1/search/webkr.json'}
     if adapter(source) in approved_endpoints and source.get('url') != approved_endpoints[adapter(source)]:
         return '공식 API 승인된 주소만 요청 가능'
     if adapter(source) == 'greenhouse':

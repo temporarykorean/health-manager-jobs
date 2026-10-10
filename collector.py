@@ -13,6 +13,7 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, urlunsplit, parse_qsl, urlencode
 from urllib.request import Request, urlopen
+from public_apis import fetch_alio_api, parse_alio_api, fetch_kto_api, parse_kto_api, fetch_gg_api, parse_gg_api
 from public_ats import fetch_greenhouse, parse_greenhouse
 from official_pages import fetch_dlenc, parse_dlenc
 from source_policy import kind, adapter, pending_reason, PRIORITIES
@@ -318,6 +319,10 @@ def atomic_json(path, data):
 # 어댑터는 (가져오기, 해석하기) 계약을 공유합니다.
 # 잡코리아는 승인 후 실제 제공 명세에 맞춘 어댑터를 등록합니다.
 ADAPTERS = {
+    "alio_api": (fetch_alio_api, parse_alio_api),
+    "kto_api": (fetch_kto_api, parse_kto_api),
+    "gg_jobaba": (fetch_gg_api, parse_gg_api),
+    "gg_worknet": (fetch_gg_api, parse_gg_api),
     "greenhouse": (fetch_greenhouse, parse_greenhouse),
     "dlenc": (fetch_dlenc, parse_dlenc),
     "alio": (fetch_alio, parse_alio),
@@ -356,7 +361,7 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
             parser = ADAPTERS[adapter(source)][1]
             raw = fetcher(source)
             jobs, count = parser(raw, source, checked_at)
-            warnings = json.loads(raw).get("warnings", []) if adapter(source) in {"alio", "greeting", "greenhouse", "dlenc"} else []
+            warnings = json.loads(raw).get("warnings", []) if adapter(source) in {"alio", "greeting", "greenhouse", "dlenc", "alio_api", "gg_jobaba", "gg_worknet"} else []
             if adapter(source) == "alio":
                 accepted_ids = {job["id"] for job in jobs}
                 # 이번 실행에서 상세를 다시 확인한 비관련 공고만 제거. 접속 실패 자료는 보존.
