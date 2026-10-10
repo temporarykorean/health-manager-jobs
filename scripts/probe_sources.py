@@ -1,40 +1,24 @@
-"""공개 출처 1회 조사. 인증정보나 개인회원 페이지를 요청하지 않습니다."""
 import json
-import re
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
-from urllib.parse import urljoin
-from urllib.robotparser import RobotFileParser
 from pathlib import Path
-
-results = {}
-def fetch(url):
-    try:
-        with urlopen(Request(url, headers={'User-Agent': 'HealthJobsCollector/1.0'}), timeout=12) as response:
-            data = response.read(400000).decode('utf-8', errors='replace')
-            results[url] = {'url': response.url, 'text': data}
-            print('PROBE',url, 'OK',len(data))
-            return data
-    except Exception as error:
-        results[url] = {'error': str(error)}
-        print('PROBE',url,'ERROR',str(error))
-        return ''
-
-hosts = ['https://job.alio.go.kr','https://careers.hybecorp.com','https://kodma.recruiter.co.kr','https://ibk4.incruit.com','https://recruit.lotte.co.kr','https://recruit.greetinghr.com']
-for base in hosts:
-    robots = fetch(base + '/robots.txt')
-    print('ROBOTS',base,robots[:2000])
-    policy = RobotFileParser()
-    policy.parse(robots.splitlines())
-    paths = ['/recruit.do','/recruitview.do?idx=305608'] if 'alio' in base else ['/ko/home'] if 'hybe' in base else ['/app/jobnotice/list'] if 'recruiter' in base else ['/hire/hirelist.asp'] if 'incruit' in base else ['/apply/announcement/list'] if 'lotte' in base else ['/']
-    for path in paths:
-        url=base+path
-        if robots and not policy.can_fetch('HealthJobsCollector/1.0',url):
-            print('EXCLUDED ROBOTS',url)
-            continue
-        text=fetch(url)
-        print('SCRIPTS',url,re.findall(r'<script[^>]+src=["\']([^"\']+)',text))
-        print('LINKS',url,re.findall(r'href=["\']([^"\']+)',text)[-30:])
-        print('INPUTS',url,re.findall(r'<(?:input|select|form)[^>]+>',text)[:80])
-        print('HINTS',url,'\n'.join(line[:700] for line in text.splitlines() if re.search(r'ajax|url\s*:|recruit|fetch\(|__NEXT_DATA__|copyright',line,re.I))[:14000])
-Path('data/source_probe.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
+from urllib.request import Request,urlopen
+from urllib.parse import urlencode
+results={}
+def fetch(url,data=None):
+ try:
+  with urlopen(Request(url,data=data,headers={'User-Agent':'HealthJobsCollector/1.0'}),timeout=15) as response:
+   raw=response.read(700000)
+   text=raw.decode('utf-8',errors='replace')
+   results[url]={'url':response.url,'text':text}
+   print('OK',url,len(raw),text[:250])
+ except Exception as e:
+  results[url]={'error':str(e)}
+  print('ERROR',url,str(e))
+fetch('https://job.alio.go.kr/getCSVRecruitList.do',urlencode({'fileName':'채용정보목록'}).encode())
+fetch('https://job.alio.go.kr/recruit.do?'+urlencode({'keyword':'보건','search_type':'','pageSet':50,'pageNo':1,'s_date':'2026.06.01','e_date':'2026.10.10'}))
+fetch('https://job.alio.go.kr/right.do')
+fetch('https://careers.hybecorp.com/ko/o/234375')
+fetch('https://careers.hybecorp.com/sitemap.xml')
+fetch('https://smartscore.career.greetinghr.com/robots.txt')
+fetch('https://smartscore.career.greetinghr.com/ko/home')
+fetch('https://www.greetinghr.com/terms')
+Path('data/source_probe.json').write_text(json.dumps(results,ensure_ascii=False))
