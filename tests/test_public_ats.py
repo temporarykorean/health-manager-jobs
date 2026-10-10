@@ -2,7 +2,7 @@ import json
 import unittest
 from unittest.mock import patch
 from public_ats import parse_greenhouse, fetch_greenhouse
-from official_pages import dl_rows, parse_dlenc
+from official_pages import dl_rows, parse_dlenc, fetch_dlenc
 from collector import collect
 from robots_policy import RobotsPolicy
 
@@ -49,6 +49,19 @@ class PublicATSTests(unittest.TestCase):
   rows=dl_rows(text,'https://www.dlenc.co.kr/careers/job/')
   self.assertEqual(rows[0]['url'],'https://www.dlenc.co.kr/careers/job/FieldEmpViewPJ.do?no_empt_anct=261001123456')
   self.assertIsNone(rows[0]['deadline']);self.assertEqual(rows[0]['published_at'],'2026-10-01')
+ def test_dl_relative_detail_uses_listing_directory(self):
+  source=dict(SOURCE,url='https://www.dlenc.co.kr/careers/job/FieldEmpListPJ.do',page_urls=['https://www.dlenc.co.kr/careers/job/FieldEmpListPJ.do'])
+  class Session:
+   base='https://www.dlenc.co.kr'
+   def get(self,url):
+    if 'FieldEmpListPJ.do' in url:
+     return '<h1>채용공고</h1><table><tr><td><a href="FieldEmpViewPJ.do?no_empt_anct=261001123456">전체직무 상시채용</a></td></tr></table>'
+    if url=='https://www.dlenc.co.kr/careers/job/FieldEmpViewPJ.do?no_empt_anct=261001123456': return '<p>보건관리</p>'
+    raise ValueError('잘못된 원문 경로')
+  with patch('official_pages.PublicSession',return_value=Session()):
+   data=json.loads(fetch_dlenc(source))
+  self.assertEqual(len(data['documents']),1)
+  self.assertEqual(data['warnings'],[])
  def test_robots_wildcards_groups_and_allow_specificity(self):
   policy=RobotsPolicy();policy.parse(['User-agent: *','Disallow: /app*','Allow: /appsite/','Disallow: /*?secret=','User-agent: Googlebot','Allow: /'])
   self.assertFalse(policy.can_fetch('HealthJobsCollector/1.0','https://x.kr/app/jobnotice/1'))

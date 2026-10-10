@@ -34,7 +34,7 @@ def fetch_dlenc(source):
             try:
                 text=session.get(url+'?'+urlencode({'currentPage':page}))
                 if '채용공고' not in text: raise ValueError('공식 목록 형식 변경')
-                found=dl_rows(text,session.base); scanned+=len(found)
+                found=dl_rows(text,url); scanned+=len(found)
                 rows.update((r['id'],r) for r in found)
                 if len(found)<10: break
                 if page==2: warnings.append('목록 페이지 조회 한도')
