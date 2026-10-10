@@ -31,9 +31,9 @@ class ClassificationTests(unittest.TestCase):
 
     def test_region_does_not_guess_city_or_multiple_regions(self):
         cases = {"서울특별시 강서구": "서울", "경기도 광주시": "경기",
-                 "광주광역시": "기타 지역", "인천광역시": "기타 지역",
-                 "수원시": "확인 필요", "서울 / 경기": "확인 필요",
-                 "전국": "확인 필요", "": "확인 필요"}
+                 "광주광역시": "기타", "인천광역시": "인천",
+                 "수원시": "기타", "서울 / 경기": "기타",
+                 "전국": "기타", "": "기타"}
         for text, expected in cases.items():
             with self.subTest(text=text):
                 self.assertEqual(region_type(text), expected)

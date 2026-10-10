@@ -37,10 +37,12 @@ jobs:
           python -m unittest discover -s tests -v
           node --check web/app.js
           node tests/test_frontend.mjs
-      - name: 공식 RSS 수집
+      - name: 우선순위에 따라 허용된 출처 수집
         id: collect
         env:
           SARAMIN_ACCESS_KEY: ${{ secrets.SARAMIN_ACCESS_KEY }}
+          NAVER_SEARCH_CLIENT_ID: ${{ secrets.NAVER_SEARCH_CLIENT_ID }}
+          NAVER_SEARCH_CLIENT_SECRET: ${{ secrets.NAVER_SEARCH_CLIENT_SECRET }}
         shell: bash
         run: |
           set +e
@@ -100,5 +102,5 @@ jobs:
       - name: 수집 전체 실패를 실행 기록에 표시
         if: needs.collect-and-build.outputs.collection_failed == 'true'
         run: |
-          echo '웹페이지는 배포했지만 모든 RSS 수집이 실패했습니다. 사이트의 수집 상태를 확인하세요.'
+          echo '웹페이지는 배포했지만 모든 활성 출처 수집이 실패했습니다. 사이트의 수집 상태를 확인하세요.'
           exit 1

@@ -1,4 +1,4 @@
-"""공식 RSS 수집기. Python 3.10 이상, 추가 패키지와 GPT/API 키 불필요."""
+"""API·RSS·검토된 채용페이지·검색 링크 수집기. Python 3.10 이상, 추가 패키지와 GPT/API 키 불필요."""
 
 import hashlib
 import html
@@ -13,11 +13,15 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit, urlunsplit, parse_qsl, urlencode
 from urllib.request import Request, urlopen
+from source_policy import kind, adapter, pending_reason, PRIORITIES
+from public_careers import fetch_alio, parse_alio, fetch_greeting, parse_greeting
+from source_adapters import fetch_pages, parse_pages, fetch_search, parse_search
 
 ROOT = Path(__file__).resolve().parent
 KST = timezone(timedelta(hours=9))
 MAX_BYTES = 3_000_000
-SEARCH_KEYWORDS = ("보건관리자", "산업간호사")
+SEARCH_KEYWORDS = ("보건관리자", "보건 관리자", "산업간호사", "산업 간호사", "보건관리원", "사업장 간호사", "산업보건", "EHS 보건", "안전보건")
+RELATED_PATTERN = r"보건\s*관리(?:자|원)?|산업\s*간호(?:사)?|사업장\s*간호사|산업\s*보건|EHS\s*보건|안전\s*보건"
 
 
 def now_iso():
@@ -37,7 +41,7 @@ def employment_type(text):
     text = re.sub(r"정규직\s*(?:전환|채용전환)[^\n,;]*", "", text)
     text = re.sub(r"(?:정규직|비정규직|계약직)\s*(?:이\s*)?(?:아님|아닌|제외)", "", text)
     regular = "정규직" in text.replace("비정규직", "")
-    non_regular = bool(re.search(r"비정규직|계약직|기간제|파견직|인턴|일용직|임시직|시간제", text))
+    non_regular = bool(re.search(r"비정규직|계약직|기간제|파견직|인턴|일용직|임시직|시간제|프로젝트\s*계약|대체\s*인력|휴직\s*대체|촉탁직", text))
     # 무기계약직은 기관별 정의가 달라 정규직으로 단정하지 않습니다.
     if "무기계약" in text or "공무직" in text:
         return "확인 필요"
@@ -50,7 +54,7 @@ def employment_type(text):
 
 def region_type(location):
     if not location or re.search(r"전국|미정|협의|확인 필요", location):
-        return "확인 필요"
+        return "기타"
     names = {
         "서울": r"서울(?:특별시|시)?",
         "경기": r"경기(?:도)?",
@@ -65,9 +69,9 @@ def region_type(location):
     }
     found = {name for name, pattern in names.items() if re.search(pattern, location)}
     if len(found) != 1:
-        return "확인 필요"
+        return "기타"
     name = found.pop()
-    return name if name in {"서울", "경기"} else "기타 지역"
+    return name if name in {"서울", "경기", "인천"} else "기타"
 
 
 def labeled_value(text, labels):
@@ -151,7 +155,7 @@ def parse_feed(raw, source, checked_at):
         description = clean_text(field(item, "description") or field(item, "encoded")
                                  or field(item, "summary") or field(item, "content"))
         # 제목이 아닌 본문에서만 발견된 경우도 보조 키워드로 검색합니다.
-        if not re.search(r"보건\s*관리(?:자|원)?|산업\s*간호", title + "\n" + description):
+        if not re.search(RELATED_PATTERN, title + "\n" + description):
             continue
         if re.search(r"합격자|합격발표|결과발표|면접시험.*안내|연간.*계획", title):
             continue
@@ -192,7 +196,7 @@ def parse_saramin(raw, source, checked_at):
         position = item.get("position", {})
         title = clean_text(position.get("title", ""))
         evidence = title + " " + str(item.get("keyword", "")) + " " + position.get("job-code", {}).get("name", "")
-        if not re.search(r"보건\s*관리(?:자|원)?|산업\s*간호", evidence):
+        if not re.search(RELATED_PATTERN, evidence):
             continue
         link = safe_url(item.get("url", ""))
         if not link or not title:
@@ -253,8 +257,9 @@ def fetch_saramin(source):
 
 
 def fetch_feed(source):
-    if source.get("type") == "saramin":
-        return fetch_saramin(source)
+    source_adapter = ADAPTERS[adapter(source)]
+    if source_adapter[0] is not None:
+        return source_adapter[0](source)
     request = Request(source["url"], headers={"User-Agent": "HealthJobsRSS/1.0", "Accept": "application/rss+xml, application/xml, text/xml"})
     with urlopen(request, timeout=20) as response:
         data = response.read(MAX_BYTES + 1)
@@ -272,30 +277,58 @@ def atomic_json(path, data):
     temporary.replace(path)
 
 
+# 어댑터는 (가져오기, 해석하기) 계약을 공유합니다.
+# 잡코리아는 승인 후 실제 제공 명세에 맞춘 어댑터를 등록합니다.
+ADAPTERS = {
+    "alio": (fetch_alio, parse_alio),
+    "greeting": (fetch_greeting, parse_greeting),
+    "rss": (None, parse_feed),
+    "atom": (None, parse_feed),
+    "saramin": (fetch_saramin, parse_saramin),
+    "jobposting": (fetch_pages, parse_pages),
+    "naver_search": (fetch_search, parse_search),
+}
+
+
 def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
     checked_at = checked_at or now_iso()
     prior_jobs = previous.get("jobs", [])
+    for job in prior_jobs:
+        job["region"] = region_type(job.get("location", ""))
+        job.setdefault("location_detail", job.get("location", "상세 근무지 원문 확인 필요"))
+        job.setdefault("collected_at", job.get("last_seen"))
     existing = {job["id"]: dict(job) for job in prior_jobs}
     prior_status = {source["id"]: source for source in previous.get("sources", [])}
+    discoveries = {item["id"]: dict(item) for item in previous.get("discoveries", [])}
     statuses = []
     successes = 0
-    for source in sources:
+    for source in sorted(sources, key=lambda item: PRIORITIES.get(kind(item), 99)):
         old = prior_status.get(source["id"], {})
         status = {"id": source["id"], "name": source["name"], "homepage": source["homepage"],
-                  "attempted_at": checked_at, "last_success_at": old.get("last_success_at")}
-        if source.get("type") == "saramin" and not os.environ.get("SARAMIN_ACCESS_KEY", "").strip():
-            status.update(status="pending", message="API 승인 및 키 연결 대기 · 자동 수집 미연결")
+                  "attempted_at": checked_at, "last_success_at": old.get("last_success_at"),
+                  "type": kind(source), "priority": PRIORITIES.get(kind(source), 99)}
+        reason = pending_reason(source, checked_at, ADAPTERS)
+        if reason:
+            status.update(status="pending", message=reason)
             statuses.append(status)
             continue
         try:
-            parser = parse_saramin if source.get("type") == "saramin" else parse_feed
-            jobs, count = parser(fetcher(source), source, checked_at)
+            parser = ADAPTERS[adapter(source)][1]
+            raw = fetcher(source)
+            jobs, count = parser(raw, source, checked_at)
+            warnings = json.loads(raw).get("warnings", []) if adapter(source) in {"alio", "greeting"} else []
+            destination = discoveries if kind(source) == "search" else existing
             for job in jobs:
-                prior = existing.get(job["id"], {})
+                prior = destination.get(job["id"], {})
                 job["first_seen"] = prior.get("first_seen", checked_at)
-                existing[job["id"]] = job
-            status.update(status="ok", last_success_at=checked_at, feed_count=count,
-                          matched_count=len(jobs), message=f"게시물 {count}개 확인 · 관련 공고 {len(jobs)}개")
+                job["source_priority"] = PRIORITIES[kind(source)]
+                job["collected_at"] = checked_at
+                job.setdefault("location_detail", job.get("location", "상세 근무지 원문 확인 필요"))
+                # 같은 원문 URL은 더 높은 우선순위의 출처를 유지합니다.
+                if not prior or job["source_priority"] <= prior.get("source_priority", 99):
+                    destination[job["id"]] = job
+            status.update(status="partial" if warnings else "ok", warnings=warnings, last_success_at=checked_at, feed_count=count,
+                          matched_count=len(jobs), message=("일부 조회 실패/한도 · " if warnings else "") + f"게시물 {count}개 확인 · 관련 {'원문 후보' if kind(source) == 'search' else '공고'} {len(jobs)}개")
             successes += 1
         except Exception as error:
             status.update(status="error", message="접속 또는 데이터 처리 실패 · 이전 공고 유지",
@@ -307,12 +340,18 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
     for job in existing.values():
         key = canonical_url(job["url"])
         prior = jobs_by_url.get(key)
-        if not prior or job.get("last_seen", "") > prior.get("last_seen", ""):
+        if not prior or (job.get("source_priority", 99), -datetime.fromisoformat(job["last_seen"]).timestamp()) < (prior.get("source_priority", 99), -datetime.fromisoformat(prior["last_seen"]).timestamp()):
             jobs_by_url[key] = job
+    for status in statuses:
+        saved = [job for job in jobs_by_url.values() if job.get("source_id") == status["id"]]
+        status["saved_count"] = len(saved)
+        status["active_count"] = sum(not job.get("deadline") or job["deadline"] >= checked_at for job in saved)
     return {
-        "schema_version": 1, "attempted_at": checked_at,
+        "schema_version": 2, "attempted_at": checked_at,
         "last_success_at": checked_at if successes else previous.get("last_success_at"),
         "jobs": sorted(jobs_by_url.values(), key=lambda job: job.get("published_at") or job.get("first_seen", ""), reverse=True),
+        "discoveries": sorted((item for item in discoveries.values() if canonical_url(item["url"]) not in jobs_by_url),
+                              key=lambda item: item.get("first_seen", ""), reverse=True)[:500],
         "sources": statuses,
     }, successes
 

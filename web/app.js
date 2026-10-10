@@ -1,7 +1,7 @@
 "use strict";
 
 const employmentOptions = ["전체", "정규직", "비정규직", "확인 필요"];
-const regionOptions = ["전체", "서울", "경기", "기타 지역", "확인 필요"];
+const regionOptions = ["전체", "서울", "경기", "인천", "기타"];
 const state = { employment: "전체", region: "전체", query: "", savedOnly: false, includeClosed: false, sort: "recent" };
 let data = window.INITIAL_JOBS || { jobs: [], sources: [] };
 let favorites = new Set();
@@ -41,7 +41,7 @@ function filteredJobs(jobs, filters, saved, now = Date.now()) {
     && (!query || `${job.title} ${job.company} ${job.location} ${job.source}`.toLocaleLowerCase().includes(query)))
     .sort((a, b) => filters.sort === "deadline"
       ? (Date.parse(a.deadline) || Infinity) - (Date.parse(b.deadline) || Infinity)
-      : (Date.parse(b.last_seen) || 0) - (Date.parse(a.last_seen) || 0));
+      : (Date.parse(b.published_at || b.first_seen) || 0) - (Date.parse(a.published_at || a.first_seen) || 0));
 }
 
 function toast(message) {
@@ -82,7 +82,7 @@ function card(job) {
   heading.append(link);
   const badges = element("div", "badges");
   const employmentClass = job.employment === "정규직" ? "regular" : job.employment === "비정규직" ? "nonregular" : "";
-  badges.append(element("span", `badge ${employmentClass}`, job.employment), element("span", "badge", job.region === "확인 필요" ? "지역 확인 필요" : job.region));
+  badges.append(element("span", `badge ${employmentClass}`, job.employment), element("span", "badge", job.region));
   if (job.origin === "manual") badges.append(element("span", "badge", "초기 직접 확인"));
   const bottom = element("div", "card-bottom");
   const days = daysUntil(job.deadline);
@@ -95,7 +95,7 @@ function card(job) {
   const evidence = element("details", "evidence");
   evidence.append(element("summary", "", "출처와 분류 기준 확인"));
   const ul = element("ul");
-  [`출처: ${job.source}`, `고용형태 근거: ${job.employment_evidence || "명시 정보 없음"}`, `마지막 확인: ${dateText(job.last_seen, true)}`,
+  [`출처: ${job.source}`, `게시일: ${dateText(job.published_at)}`, `상세 근무지: ${job.location_detail || "원문 확인 필요"}`, `키워드 근거: ${job.keyword_evidence || "제목 또는 출처의 직무명"}`, `고용형태 근거: ${job.employment_evidence || "명시 정보 없음"}`, `마지막 확인: ${dateText(job.last_seen, true)}`,
     job.origin === "manual" ? "초기 공고는 직접 확인한 자료입니다. 자동 갱신 대상이 아닙니다." : "연결된 출처에서 확인한 정보입니다. 최신 접수 여부는 원문을 확인해주세요."].forEach(text => ul.append(element("li", "", text)));
   evidence.append(ul);
   article.append(top, heading, badges, element("p", "job-location", job.location), bottom, evidence);
@@ -109,9 +109,24 @@ function renderSources() {
     const top = element("div", "source-card-top");
     const link = element("a", "", source.name);
     link.href = safeLink(source.homepage); link.target = "_blank"; link.rel = "noopener noreferrer";
-    top.append(link, element("span", `source-status ${source.status !== "ok" ? "error" : ""}`, source.status === "ok" ? "수집 성공" : source.status === "error" ? "수집 실패" : source.status === "pending" ? "연결 대기" : "접속 확인 전"));
+    top.append(link, element("span", `source-status ${source.status !== "ok" ? "error" : ""}`, source.status === "ok" ? "수집 성공" : source.status === "partial" ? "부분 수집" : source.status === "error" ? "수집 실패" : source.status === "pending" ? "연결 대기" : "접속 확인 전"));
+    const kinds = { api: "공식 API", rss: "공개 RSS", atom: "공개 Atom", page: "검토된 채용페이지", search: "검색 원문 후보" };
+    if (source.type) section.append(element("p", "", `${source.priority}순위 · ${kinds[source.type] || source.type}`));
     section.append(top, element("p", "", source.message || "자동 수집 확인 전"), element("p", "", `최근 성공: ${dateText(source.last_success_at, true)}`));
     $("sources").append(section);
+  });
+}
+
+function renderDiscoveries() {
+  const candidates = (data.discoveries || []).filter(item => safeLink(item.url));
+  $("discoveries").replaceChildren();
+  if (!candidates.length) $("discoveries").append(element("p", "", "아직 발견한 원문 후보가 없습니다. 검색 API 연결 상태를 확인해주세요."));
+  candidates.forEach(item => {
+    const section = element("div", "source-card");
+    const link = element("a", "", item.title);
+    link.href = safeLink(item.url); link.target = "_blank"; link.rel = "noopener noreferrer";
+    section.append(link, element("p", "", item.verification), element("p", "", `처음 발견: ${dateText(item.first_seen, true)}`));
+    $("discoveries").append(section);
   });
 }
 
@@ -122,18 +137,21 @@ function render() {
   $("count").textContent = jobs.length;
   $("list").replaceChildren(...jobs.map(card));
   $("empty").hidden = jobs.length > 0;
-  const failed = data.sources.filter(source => source.status !== "ok");
+  const failed = data.sources.filter(source => ["error", "partial"].includes(source.status));
+  const pending = data.sources.filter(source => source.status === "pending");
   const manualCount = data.jobs.filter(job => job.origin === "manual").length;
   const stale = data.last_success_at && Date.now() - Date.parse(data.last_success_at) > 36 * 3600000;
   const messages = [];
   if (!data.last_success_at) messages.push("자동 수집 성공 기록이 아직 없습니다.");
   else if (stale) messages.push("자동 수집 성공 후 36시간 이상 지났습니다. 최신 공고가 누락될 수 있습니다.");
   if (failed.length) messages.push(`${failed.length}곳의 수집이 완료되지 않았습니다. 아래 수집 상태를 확인해주세요.`);
+  if (pending.length) messages.push(`${pending.length}곳은 연결 대기 중입니다.`);
   if (manualCount) messages.push(`초기 공고 ${manualCount}건은 직접 확인한 자료이며 자동 갱신되지 않습니다.`);
   $("notice").hidden = !messages.length;
   $("notice").textContent = messages.join(" ");
   $("updated").textContent = data.last_success_at ? `자동 수집 최근 성공 ${dateText(data.last_success_at, true)}` : `자동 수집 미확인${data.attempted_at ? ` · 최근 시도 ${dateText(data.attempted_at, true)}` : ""}`;
   renderSources();
+  renderDiscoveries();
 }
 
 function reset() {

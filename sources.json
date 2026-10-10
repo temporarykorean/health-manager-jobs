@@ -1,24 +1,119 @@
 [
   {
+    "id": "saramin",
+    "name": "사람인",
+    "type": "api",
+    "url": "https://oapi.saramin.co.kr/job-search",
+    "homepage": "https://www.saramin.co.kr",
+    "company": "회사명 확인 필요",
+    "adapter": "saramin",
+    "required_env": [
+      "SARAMIN_ACCESS_KEY"
+    ],
+    "pending_message": "사람인 API 승인 및 키 연결 대기",
+    "documentation_url": "https://oapi.saramin.co.kr/guide/job-search"
+  },
+  {
+    "id": "jobkorea",
+    "name": "잡코리아 공식 API",
+    "type": "api",
+    "adapter": "jobkorea",
+    "enabled": false,
+    "url": "https://www.jobkorea.co.kr/network/Popup_Xml.asp",
+    "homepage": "https://www.jobkorea.co.kr",
+    "pending_message": "공식 API 승인 및 제공 명세 연결 대기 · 직접 크롤링 없음",
+    "documentation_url": "https://www.jobkorea.co.kr/network/Popup_Xml.asp"
+  },
+  {
     "id": "airport",
     "name": "인천국제공항공사",
     "url": "https://www.airport.kr/bbs/co_ko/113/rssList.do?row=50",
     "homepage": "https://www.airport.kr/co_ko/849/subview.do?FNCT_CODE=229",
-    "company": "인천국제공항공사"
+    "company": "인천국제공항공사",
+    "type": "rss",
+    "adapter": "rss"
   },
   {
     "id": "mohw",
     "name": "보건복지부 채용 RSS",
     "url": "https://www.mohw.go.kr/rss/board.es?mid=a10501040000&bid=0003&cg_code=C03&info=",
     "homepage": "https://www.mohw.go.kr/menu.es?mid=a10807000000",
-    "company": "기관명 확인 필요"
+    "company": "기관명 확인 필요",
+    "type": "rss",
+    "adapter": "rss"
   },
   {
-    "id": "saramin",
-    "name": "사람인",
-    "type": "saramin",
-    "url": "https://oapi.saramin.co.kr/job-search",
-    "homepage": "https://www.saramin.co.kr",
-    "company": "회사명 확인 필요"
+    "id": "alio",
+    "name": "ALIO 공공기관 채용정보",
+    "type": "page",
+    "adapter": "alio",
+    "url": "https://job.alio.go.kr/recruit.do",
+    "homepage": "https://job.alio.go.kr/recruit.do",
+    "company": "공공기관",
+    "allowed_hosts": [
+      "job.alio.go.kr"
+    ],
+    "allowed_paths": [
+      "/recruit.do",
+      "/recruitview.do"
+    ],
+    "page_urls": [
+      "https://job.alio.go.kr/recruit.do"
+    ],
+    "min_interval_seconds": 1,
+    "max_requests": 125,
+    "access_review": {
+      "decision": "allowed",
+      "terms_url": "https://job.alio.go.kr/right.do",
+      "reviewed_at": "2026-10-10T00:00:00+09:00",
+      "notes": "공개데이터 자유이용 정책 확인. robots 404 규칙 없음. 저작물/첨부파일 재배포 없이 구조화 메타데이터와 짧은 키워드 근거만 저장."
+    },
+    "robots_missing": "allow_with_review"
+  },
+  {
+    "id": "hybe-greeting",
+    "name": "HYBE · Greeting",
+    "type": "page",
+    "adapter": "greeting",
+    "url": "https://careers.hybecorp.com/ko/home",
+    "homepage": "https://careers.hybecorp.com/ko/home",
+    "company": "HYBE",
+    "allowed_hosts": [
+      "careers.hybecorp.com"
+    ],
+    "allowed_paths": [
+      "/ko/home"
+    ],
+    "page_urls": [
+      "https://careers.hybecorp.com/ko/home"
+    ],
+    "min_interval_seconds": 1,
+    "max_requests": 125,
+    "access_review": {
+      "decision": "allowed",
+      "terms_url": "https://careers.hybecorp.com/privacypolicy",
+      "reviewed_at": "2026-10-10T00:00:00+09:00",
+      "notes": "공개 채용 목록/상세의 robots Allow 확인. 공개 개인정보 방침은 지원자 정보용이며 공개 채용 메타데이터 자동 조회 금지 조항을 발견하지 못함. 이용허락의 보증은 아님. 하루 1회 저빈도 메타데이터만 저장, 지원/로그인/개인정보/본문 재배포 제외."
+    }
+  },
+  {
+    "id": "naver-search",
+    "name": "검색엔진 원문 링크 발견",
+    "type": "search",
+    "adapter": "naver_search",
+    "url": "https://openapi.naver.com/v1/search/webkr.json",
+    "homepage": "https://developers.naver.com/docs/serviceapi/search/web/web.md",
+    "required_env": [
+      "NAVER_SEARCH_CLIENT_ID",
+      "NAVER_SEARCH_CLIENT_SECRET"
+    ],
+    "pending_message": "검색 API 인증 연결 대기 · 원문 자동 방문 없음",
+    "discovery_domains": [
+      "recruit.lotte.co.kr",
+      "recruit.seoul.co.kr",
+      "airport.kr",
+      "mohw.go.kr"
+    ],
+    "documentation_url": "https://developers.naver.com/docs/serviceapi/search/web/web.md"
   }
 ]
