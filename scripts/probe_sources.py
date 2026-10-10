@@ -13,19 +13,14 @@ from collector import clean_text, RELATED_PATTERN
 from public_careers import greeting_rows
 
 CANDIDATES = [
- ('DN오토모티브','https://dnautomotive.career.greetinghr.com/ko/home'),
- ('하나머티리얼즈','https://hanamts.career.greetinghr.com/ko/home'),
- ('11번가','https://11st.career.greetinghr.com/ko/career'),
- ('휴젤','https://hugel.career.greetinghr.com/ko/home'),
- ('동국제강','https://dongkuksteel.career.greetinghr.com/ko/home'),
- ('오늘의집','https://bucketplace.career.greetinghr.com/ko/home'),
- ('DL이앤씨','https://www.dlenc.co.kr/careers/job/FieldEmpList.do'),
- ('DL이앤씨 PJT','https://www.dlenc.co.kr/careers/job/FieldEmpListPJ.do'),
- ('GS건설','https://gsenc.recruiter.co.kr/appsite/company/index'),
- ('현대엔지니어링','https://hec.recruiter.co.kr/career/home'),
- ('HDC현대산업개발','https://hdcr.recruiter.co.kr/appsite/company/index'),
- ('GM','https://generalmotors.wd5.myworkdayjobs.com/ko-KR/Careers_GM'),
- ('SK','https://www.skcareers.com/'),
+ ('GS건설','https://gsenc.recruiter.co.kr/career/home'),
+ ('SK 채용목록','https://www.skcareers.com/Recruit'),
+ ('DN 개인정보','https://dnautomotive.career.greetinghr.com/ko/personal-info'),
+ ('11번가 개인정보','https://11st.career.greetinghr.com/ko/privacy'),
+ ('하나머티리얼즈 개인정보','https://hanamts.career.greetinghr.com/privacypolicy'),
+ ('DL 플랜트 상시채용','https://www.dlenc.co.kr/careers/job/FieldEmpViewPJ.do?no_empt_anct=260916161205'),
+ ('DL 주택 상시채용','https://www.dlenc.co.kr/careers/job/FieldEmpViewPJ.do?no_empt_anct=260825194751'),
+ ('DL 토목 상시채용','https://www.dlenc.co.kr/careers/job/FieldEmpViewPJ.do?no_empt_anct=260730165347'),
 ]
 
 def probe(item):
@@ -52,6 +47,9 @@ def probe(item):
   result['scripts']=[u for u in re.findall(r'<script[^>]*src=["\']([^"\']+)',text) if re.search(r'career|recruit|job',u,re.I)][:8]
   result['table_rows']=[clean_text(r)[:350] for r in re.findall(r'<tr\b[^>]*>([\s\S]*?)</tr>',text,re.I) if re.search(r'채용|보건|현채직|PJT',clean_text(r))][:12]
   result['jsonld']='application/ld+json' in text
+  result['relevant_context']=[clean_text(text)[max(0,m.start()-100):m.end()+300] for m in re.finditer(r'보건관리|산업간호|간호사',clean_text(text))][:8]
+  if 'recruiter.co.kr' in base or 'skcareers' in base:
+   result['public_markers']=[text[max(0,m.start()-60):m.end()+300] for m in re.finditer(r'jobnoticeSn|채용공고|recruitList|RecruitList|JobPosting|application/ld',text)][:8]
   for term_url,label in result['policy_links'][:1]:
    if urlsplit(term_url).netloc!=urlsplit(url).netloc or not policy.can_fetch(USER_AGENT,term_url): continue
    time.sleep(delay)
@@ -66,3 +64,12 @@ def probe(item):
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
  for result in pool.map(probe,CANDIDATES): print('SOURCE_PROBE '+json.dumps(result,ensure_ascii=False),flush=True)
+
+from public_ats import fetch_greenhouse, parse_greenhouse
+source={'id':'coupang-greenhouse','name':'쿠팡 · Greenhouse 공개 API','type':'api','adapter':'greenhouse','board_token':'coupang','company':'쿠팡','url':'https://boards-api.greenhouse.io/v1/boards/coupang/jobs','allowed_hosts':['www.coupang.jobs','boards.greenhouse.io','job-boards.greenhouse.io'],'max_details':40}
+try:
+ raw=fetch_greenhouse(source)
+ jobs,count=parse_greenhouse(raw,source,'2026-10-10T22:00:00+09:00')
+ payload=json.loads(raw)
+ print('ATS_PROBE '+json.dumps(dict(scanned=count,warnings=payload['warnings'],jobs=jobs),ensure_ascii=False),flush=True)
+except Exception as e: print('ATS_PROBE '+json.dumps({'error':str(e)}),flush=True)
