@@ -80,9 +80,16 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
       - name: 공개 웹페이지 배포
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: 로그인 없는 공개 접근과 최신 데이터 검증
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: python tests/verify_deployment.py
 
   report:
     needs: [collect-and-build, deploy]
