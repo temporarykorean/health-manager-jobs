@@ -68,7 +68,9 @@
       "reviewed_at": "2026-10-10T00:00:00+09:00",
       "notes": "공개데이터 자유이용 정책 확인. robots 404 규칙 없음. 저작물/첨부파일 재배포 없이 구조화 메타데이터와 짧은 키워드 근거만 저장."
     },
-    "robots_missing": "allow_with_review"
+    "robots_missing": "allow_with_review",
+    "request_timeout_seconds": 25,
+    "max_seconds": 180
   },
   {
     "id": "hybe-greeting",

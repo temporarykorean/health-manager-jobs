@@ -1,7 +1,7 @@
 import json
 import unittest
 from unittest.mock import patch
-from collector import collect, parse_feed, SEARCH_KEYWORDS
+from collector import collect, parse_feed, SEARCH_KEYWORDS, deduplicate_jobs, active_job
 from public_careers import parse_alio, parse_greeting, iso_date, PublicSession
 from source_policy import pending_reason, public_url
 
@@ -59,3 +59,14 @@ class PublicSourceTests(unittest.TestCase):
     def test_short_year_and_malformed_url(self):
         self.assertEqual(iso_date('26.10.15'),'2026-10-15')
         self.assertFalse(public_url('https://example.org:bad/'))
+
+class DeduplicationTests(unittest.TestCase):
+    def test_company_title_location_date_and_original_alias(self):
+        a=dict(id='a', company='주식회사 기업',title='보건관리자',location='서울',published_at='2026-10-01',url='https://company.kr/1',source_priority=3)
+        b=dict(a,id='b',company='(주)기업',url='https://alio.kr/2')
+        c=dict(a,id='c',url='https://company.kr/3',published_at='2026-10-02')
+        self.assertEqual(len(deduplicate_jobs([a,b,c])),2)
+        b['title']='다직렬 채용';b['employer_url']=a['url']
+        self.assertEqual(len(deduplicate_jobs([a,b])),1)
+    def test_deadline_timezone(self):
+        self.assertTrue(active_job({'deadline':'2026-10-10T12:00:00Z'},'2026-10-10T20:00:00+09:00'))

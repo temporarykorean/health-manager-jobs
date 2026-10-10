@@ -95,6 +95,29 @@ def canonical_url(url):
                       urlencode(sorted(query)), ""))
 
 
+def deduplicate_jobs(jobs):
+    """원문/기관 제공 별칭 및 회사·공고명·근무지·게시일 일치 중복만 제거."""
+    kept = []
+    seen = set()
+    def normalize(value):
+        return re.sub(r"[\s\W_]+", "", value.casefold().replace("(주)", "").replace("주식회사", ""))
+    for job in sorted(jobs, key=lambda j: (j.get("source_priority", 99), j.get("id", ""))):
+        keys = {("url", canonical_url(url)) for url in (job.get("url"), job.get("employer_url")) if url}
+        if all(job.get(key) for key in ("company", "title", "location", "published_at")) and "확인 필요" not in job["location"]:
+            keys.add(("posting", normalize(job["company"]), normalize(job["title"]), normalize(job["location"]), job["published_at"][:10]))
+        if not keys & seen:
+            kept.append(job)
+        seen.update(keys)
+    return kept
+
+
+def active_job(job, checked_at):
+    try:
+        return not job.get("deadline") or datetime.fromisoformat(job["deadline"].replace("Z", "+00:00")) >= datetime.fromisoformat(checked_at)
+    except (ValueError, TypeError):
+        return True
+
+
 def local_name(element):
     return element.tag.rsplit("}", 1)[-1].lower()
 
@@ -342,14 +365,15 @@ def collect(previous, sources, fetcher=fetch_feed, checked_at=None):
         prior = jobs_by_url.get(key)
         if not prior or (job.get("source_priority", 99), -datetime.fromisoformat(job["last_seen"]).timestamp()) < (prior.get("source_priority", 99), -datetime.fromisoformat(prior["last_seen"]).timestamp()):
             jobs_by_url[key] = job
+    final_jobs = deduplicate_jobs(jobs_by_url.values())
     for status in statuses:
-        saved = [job for job in jobs_by_url.values() if job.get("source_id") == status["id"]]
+        saved = [job for job in final_jobs if job.get("source_id") == status["id"]]
         status["saved_count"] = len(saved)
-        status["active_count"] = sum(not job.get("deadline") or job["deadline"] >= checked_at for job in saved)
+        status["active_count"] = sum(active_job(job, checked_at) for job in saved)
     return {
         "schema_version": 2, "attempted_at": checked_at,
         "last_success_at": checked_at if successes else previous.get("last_success_at"),
-        "jobs": sorted(jobs_by_url.values(), key=lambda job: job.get("published_at") or job.get("first_seen", ""), reverse=True),
+        "jobs": sorted(final_jobs, key=lambda job: job.get("published_at") or job.get("first_seen", ""), reverse=True),
         "discoveries": sorted((item for item in discoveries.values() if canonical_url(item["url"]) not in jobs_by_url),
                               key=lambda item: item.get("first_seen", ""), reverse=True)[:500],
         "sources": statuses,

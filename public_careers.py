@@ -5,7 +5,7 @@ import json
 import re
 import time
 from datetime import datetime, timedelta
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit, urljoin, urlencode
 from urllib.robotparser import RobotFileParser
 from urllib.request import Request, build_opener
@@ -19,9 +19,18 @@ class PublicSession:
         self.policy = None
         self.last = 0
         self.count = 0
+        self.started = time.monotonic()
         self.base = 'https://' + urlsplit(source['url']).netloc
         try:
-            text = self._read(self.base + '/robots.txt').decode('utf-8')
+            try:
+                raw = self._read(self.base + '/robots.txt')
+            except (URLError, TimeoutError) as error:
+                if isinstance(error, HTTPError):
+                    raise
+                # 일시적인 기관 서버 지연만 한 차례 재시도. 차단 응답은 재시도하지 않음.
+                time.sleep(1)
+                raw = self._read(self.base + '/robots.txt')
+            text = raw.decode('utf-8')
             if '<html' in text.lower() or not re.search(r'^\s*User-agent\s*:', text, re.I | re.M):
                 raise ValueError('robots.txt 대신 오류 응답 · 접근 정책 미확인')
             self.policy = RobotFileParser()
@@ -32,7 +41,7 @@ class PublicSession:
             # ALIO 공개데이터 이용정책을 검토한 경우에만 404(규칙 없음)를 허용합니다.
 
     def _read(self, url):
-        with build_opener(NoRedirect()).open(Request(url, headers={'User-Agent': USER_AGENT}), timeout=12) as response:
+        with build_opener(NoRedirect()).open(Request(url, headers={'User-Agent': USER_AGENT}), timeout=self.source.get('request_timeout_seconds', 15)) as response:
             raw = response.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
             raise ValueError('응답 크기 초과')
@@ -40,6 +49,8 @@ class PublicSession:
         return raw
 
     def get(self, url):
+        if time.monotonic() - self.started > self.source.get('max_seconds', 180):
+            raise TimeoutError('출처별 실행 시간 한도')
         if not direct_url_allowed(url, self.source):
             raise ValueError('승인된 호스트 외 접근 차단')
         if urlsplit(url).path not in self.source.get('allowed_paths', []):
@@ -128,12 +139,18 @@ def fetch_alio(source):
                 break
     if not rows and partial:
         raise ValueError('ALIO 검색 실패: ' + '; '.join(partial)[:200])
+    consecutive_failures = 0
     for idx, row in sorted(rows.items(), key=lambda item: item[1].get("published_at") or "", reverse=True)[:100]:
         url = session.base + '/recruitview.do?' + urlencode({'idx': idx})
         try:
             documents[idx] = {'url': url, 'row': row, 'html': session.get(url)}
+            consecutive_failures = 0
         except Exception as error:
             partial.append(f'{idx}: {type(error).__name__}')
+            consecutive_failures += 1
+            if consecutive_failures >= 3 or isinstance(error, TimeoutError):
+                partial.append('연속 실패 또는 실행 시간 한도 · 다른 출처로 진행')
+                break
     if len(rows) > 100:
         partial.append('상세 조회 100건 한도 · 최신 100건 우선')
     if rows and not documents:
