@@ -198,7 +198,7 @@ def parse_alio(raw, source, checked_at):
                      'location_detail': detail_location[1][:160] if detail_location else '상세 근무지 원문 확인 필요',
                      'deadline': deadline, 'published_at': published,
                      'first_seen': checked_at, 'last_seen': checked_at, 'collected_at': checked_at,
-                     'origin': 'page', 'relevance': '보건 직무' if re.search(r'보건\s*관리|산업\s*간호|사업장\s*간호|산업\s*보건|EHS\s*보건', evidence, re.I) else '관련 직무 확인 필요',
+                     'origin': 'page', 'relevance': '관련 직무 확인 필요' if re.search(r'안전관리자|산업안전기사', title) and not re.search(r'보건\s*관리|산업\s*간호|사업장\s*간호', title) else '보건 관련 키워드 포함',
                      'keyword_evidence': clean_text(evidence[max(0,match.start()-30):match.end()+100])[:160]})
     # 메타는 fetcher가 전달한 경고를 collect에서 별도로 읽습니다.
     return jobs, payload['scanned']
